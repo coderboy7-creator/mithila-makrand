@@ -1,0 +1,8 @@
+{
+  "name": "@mithila/core",
+  "version": "0.1.0",
+  "description": "Deterministic Vedic astrology calculation core. Pure JS, zero dependencies. Shared by Web server, Android and iOS (React Native).",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": { ".": "./src/index.js" }
+}

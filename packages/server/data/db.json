@@ -1,0 +1,450 @@
+{
+  "users": [
+    {
+      "id": "u-1",
+      "name": "Demo User",
+      "email": "demo@mithila.app",
+      "createdAt": "2026-09-19T17:53:30.244Z"
+    }
+  ],
+  "astrologers": [
+    {
+      "id": "a-1",
+      "name": "Pt. Raghunath Jha",
+      "languages": [
+        "Hindi",
+        "Maithili",
+        "English"
+      ],
+      "experienceYears": 31,
+      "specialties": [
+        "Kundali",
+        "Marriage Matching",
+        "Muhurta"
+      ],
+      "rating": 4.9,
+      "consultations": 12400,
+      "feePerMin": 35,
+      "available": true,
+      "photoHue": 28
+    },
+    {
+      "id": "a-2",
+      "name": "Dr. Sita Mishra",
+      "languages": [
+        "Hindi",
+        "English"
+      ],
+      "experienceYears": 18,
+      "specialties": [
+        "Career & Dasha",
+        "Varshaphal",
+        "Gochar"
+      ],
+      "rating": 4.8,
+      "consultations": 8300,
+      "feePerMin": 28,
+      "available": true,
+      "photoHue": 262
+    },
+    {
+      "id": "a-3",
+      "name": "Pt. Kaushik Chakravarti",
+      "languages": [
+        "Hindi",
+        "Bengali",
+        "English"
+      ],
+      "experienceYears": 24,
+      "specialties": [
+        "Prashna",
+        "Muhurta",
+        "Remedies"
+      ],
+      "rating": 4.7,
+      "consultations": 6120,
+      "feePerMin": 22,
+      "available": true,
+      "photoHue": 160
+    },
+    {
+      "id": "a-4",
+      "name": "Meenakshi Bharti",
+      "languages": [
+        "Hindi",
+        "English",
+        "Tamil"
+      ],
+      "experienceYears": 12,
+      "specialties": [
+        "Kundali Milan",
+        "Namkaran",
+        "Panchang"
+      ],
+      "rating": 4.8,
+      "consultations": 4980,
+      "feePerMin": 19,
+      "available": false,
+      "photoHue": 330
+    }
+  ],
+  "clients": [],
+  "appointments": [
+    {
+      "id": "apt-1789840435739",
+      "userId": "u-1",
+      "astrologerId": "a-1",
+      "astrologerName": "Pt. Raghunath Jha",
+      "mode": "call",
+      "date": "2026-09-21",
+      "time": "18:00",
+      "durationMin": 15,
+      "fee": 525,
+      "topic": "career",
+      "profileUsed": "makaranda-v1",
+      "status": "CONFIRMED",
+      "createdAt": "2026-09-19T17:53:55.739Z",
+      "notes": []
+    }
+  ],
+  "saved_kundalis": [],
+  "audit_logs": [
+    {
+      "ts": "2026-09-19T20:15:50.902Z",
+      "endpoint": "/api/v1/panchang/calculate",
+      "calculationMode": "makaranda-v2-hybrid",
+      "profileVersion": null,
+      "date": "2022-08-04",
+      "locationSource": "DEFAULT"
+    },
+    {
+      "ts": "2026-09-19T19:22:53.205Z",
+      "endpoint": "/api/v1/panchang/calculate",
+      "calculationMode": "makaranda-v1",
+      "profileVersion": null,
+      "date": "2026-09-19",
+      "locationSource": "DEFAULT"
+    },
+    {
+      "ts": "2026-09-19T19:21:17.100Z",
+      "endpoint": "/api/v1/panchang/calculate",
+      "calculationMode": "makaranda-v1",
+      "profileVersion": null,
+      "date": "2026-09-19",
+      "locationSource": "DEFAULT"
+    },
+    {
+      "ts": "2026-09-19T18:52:55.962Z",
+      "endpoint": "/api/v1/panchang/calculate",
+      "calculationMode": "drik-v1",
+      "profileVersion": null,
+      "date": "2027-02-15",
+      "locationSource": "DEFAULT"
+    },
+    {
+      "ts": "2026-09-19T18:52:55.939Z",
+      "endpoint": "/api/v1/panchang/calculate",
+      "calculationMode": "makaranda-v1",
+      "profileVersion": null,
+      "date": "2026-01-10",
+      "locationSource": "DEFAULT"
+    },
+    {
+      "ts": "2026-09-19T17:56:20.813Z",
+      "endpoint": "/api/v1/panchang/calculate",
+      "calculationMode": "MAKARANDA",
+      "profileVersion": null,
+      "date": "2025-07-11",
+      "locationSource": "DEFAULT"
+    },
+    {
+      "ts": "2026-09-19T17:53:55.691Z",
+      "endpoint": "/api/v1/reports/generate",
+      "calculationMode": "makaranda-v1",
+      "profileVersion": null,
+      "date": "1990-05-15",
+      "locationSource": "USER_PROVIDED"
+    },
+    {
+      "ts": "2026-09-19T17:53:55.665Z",
+      "endpoint": "/api/v1/yoga/calculate",
+      "calculationMode": "makaranda-v1",
+      "profileVersion": null,
+      "date": "1990-05-15",
+      "locationSource": "USER_PROVIDED"
+    },
+    {
+      "ts": "2026-09-19T17:53:55.641Z",
+      "endpoint": "/api/v1/prashna/calculate",
+      "calculationMode": "makaranda-v1",
+      "profileVersion": null,
+      "date": "2026-09-19",
+      "locationSource": "USER_PROVIDED"
+    },
+    {
+      "ts": "2026-09-19T17:53:55.617Z",
+      "endpoint": "/api/v1/varshaphal/calculate",
+      "calculationMode": "makaranda-v1",
+      "profileVersion": null,
+      "date": "1990-05-15",
+      "locationSource": "USER_PROVIDED"
+    },
+    {
+      "ts": "2026-09-19T17:53:55.603Z",
+      "endpoint": "/api/v1/muhurta/calculate",
+      "calculationMode": "makaranda-v1",
+      "profileVersion": null,
+      "date": "2026-10-01",
+      "locationSource": "DEFAULT"
+    },
+    {
+      "ts": "2026-09-19T17:53:55.554Z",
+      "endpoint": "/api/v1/transit/calculate",
+      "calculationMode": "makaranda-v1",
+      "profileVersion": null,
+      "date": "2026-09-19",
+      "locationSource": "USER_PROVIDED"
+    },
+    {
+      "ts": "2026-09-19T17:53:55.529Z",
+      "endpoint": "/api/v1/kundali/match",
+      "calculationMode": "makaranda-v1",
+      "profileVersion": null,
+      "date": null,
+      "locationSource": "DEFAULT"
+    },
+    {
+      "ts": "2026-09-19T17:53:55.505Z",
+      "endpoint": "/api/v1/dasha/calculate",
+      "calculationMode": "makaranda-v1",
+      "profileVersion": null,
+      "date": "1990-05-15",
+      "locationSource": "USER_PROVIDED"
+    },
+    {
+      "ts": "2026-09-19T17:53:55.480Z",
+      "endpoint": "/api/v1/varga/calculate",
+      "calculationMode": "drik-v1",
+      "profileVersion": null,
+      "date": "1990-05-15",
+      "locationSource": "USER_PROVIDED"
+    },
+    {
+      "ts": "2026-09-19T17:53:55.457Z",
+      "endpoint": "/api/v1/kundali/calculate",
+      "calculationMode": "makaranda-v1",
+      "profileVersion": null,
+      "date": "1990-05-15",
+      "locationSource": "USER_PROVIDED"
+    },
+    {
+      "ts": "2026-09-19T17:53:55.447Z",
+      "endpoint": "/api/v1/panchang/calculate",
+      "calculationMode": "MAKARANDA",
+      "profileVersion": "makaranda-v1",
+      "date": "2025-07-11",
+      "locationSource": "DEFAULT"
+    }
+  ],
+  "golden_reference_cases": [
+    {
+      "date": "11-07-2025",
+      "day": "शुक्र",
+      "tithi": 1,
+      "tithiDP": "52-16",
+      "tithiClock": "02:08 Night",
+      "nak": "पू.",
+      "nakDP": "03-44",
+      "nakClock": "06:44 Night",
+      "sunrise": "05:14",
+      "sunset": "06:46"
+    },
+    {
+      "date": "05-10-2025",
+      "day": "रवि",
+      "tithi": 13,
+      "tithiDP": "17-25",
+      "tithiClock": "01:07 Day",
+      "nak": "शत",
+      "nakDP": "02-07",
+      "nakClock": "07:00 Day",
+      "sunrise": "06:09",
+      "sunset": "05:51",
+      "anomaly": "Sunset 05:51 precedes sunrise 06:09 as same-day clock time."
+    },
+    {
+      "date": "10-01-2026",
+      "day": "शनि",
+      "tithi": 7,
+      "tithiDP": "11-18",
+      "tithiClock": "11:17 Day",
+      "nak": "हस्त",
+      "nakDP": "29-30",
+      "nakClock": "06:34 Night",
+      "sunrise": "06:46",
+      "sunset": "05:14"
+    },
+    {
+      "date": "25-06-2026",
+      "day": "गुरु",
+      "tithi": 11,
+      "tithiDP": "40-28",
+      "tithiClock": "09:21 Night",
+      "nak": "स्वाती",
+      "nakDP": "33-22",
+      "nakClock": "06:31 Evening",
+      "sunrise": "05:10",
+      "sunset": "06:50"
+    },
+    {
+      "date": "24-07-2016",
+      "day": "रवि",
+      "tithi": 5,
+      "tithiDP": "42-26",
+      "tithiClock": "10:16 Night",
+      "nak": "पू.भा.",
+      "nakDP": "24-26",
+      "nakClock": "03:4 Day",
+      "sunrise": "05:18",
+      "sunset": "06:42"
+    },
+    {
+      "date": "18-09-2016",
+      "day": "रवि",
+      "tithi": 2,
+      "tithiDP": "37-24",
+      "tithiClock": "08:54 Night",
+      "nak": "उ.भा.",
+      "nakDP": "00-21",
+      "nakClock": "06:04 Day",
+      "sunrise": "05:56",
+      "sunset": "06:04"
+    },
+    {
+      "date": "27-07-2022",
+      "day": "बुध",
+      "tithi": 14,
+      "tithiDP": "37-50",
+      "tithiClock": "08:39 Night",
+      "nak": "पुनर्वसु",
+      "nakDP": "60-00",
+      "nakClock": "Ahoratram",
+      "sunrise": "05:19",
+      "sunset": "06:41"
+    },
+    {
+      "date": "01-11-2022",
+      "day": "मंगल",
+      "tithi": 8,
+      "tithiDP": "47-07",
+      "tithiClock": "01:20 Night",
+      "nak": "Uttrakha",
+      "nakDP": "02-25",
+      "nakClock": "07:27 Day",
+      "sunrise": "06:29",
+      "sunset": "05:31"
+    }
+  ],
+  "golden_reference_events": [
+    {
+      "date": "11-07-2025",
+      "field": "tithi",
+      "dp": "52-16",
+      "expected": "2025-07-12T02:08:24+05:30"
+    },
+    {
+      "date": "11-07-2025",
+      "field": "nakshatra",
+      "dp": "03-44",
+      "expected": "2025-07-11T06:43:36+05:30"
+    },
+    {
+      "date": "05-10-2025",
+      "field": "tithi",
+      "dp": "17-25",
+      "expected": "2025-10-05T13:07:00+05:30"
+    },
+    {
+      "date": "05-10-2025",
+      "field": "nakshatra",
+      "dp": "02-07",
+      "expected": "2025-10-05T06:59:48+05:30"
+    },
+    {
+      "date": "10-01-2026",
+      "field": "tithi",
+      "dp": "11-18",
+      "expected": "2026-01-10T11:17:12+05:30"
+    },
+    {
+      "date": "10-01-2026",
+      "field": "nakshatra",
+      "dp": "29-30",
+      "expected": "2026-01-10T18:34:00+05:30"
+    },
+    {
+      "date": "25-06-2026",
+      "field": "tithi",
+      "dp": "40-28",
+      "expected": "2026-06-25T21:21:12+05:30"
+    },
+    {
+      "date": "25-06-2026",
+      "field": "nakshatra",
+      "dp": "33-22",
+      "expected": "2026-06-25T18:30:48+05:30"
+    },
+    {
+      "date": "24-07-2016",
+      "field": "tithi",
+      "dp": "42-26",
+      "expected": "2016-07-24T22:16:24+05:30"
+    },
+    {
+      "date": "24-07-2016",
+      "field": "nakshatra",
+      "dp": "24-26",
+      "expected": "2016-07-24T15:04:24+05:30"
+    },
+    {
+      "date": "18-09-2016",
+      "field": "tithi",
+      "dp": "37-24",
+      "expected": "2016-09-18T20:53:36+05:30"
+    },
+    {
+      "date": "18-09-2016",
+      "field": "nakshatra",
+      "dp": "00-21",
+      "expected": "2016-09-18T06:04:24+05:30"
+    },
+    {
+      "date": "27-07-2022",
+      "field": "tithi",
+      "dp": "37-50",
+      "expected": "2022-07-28T02:39:00+05:30"
+    },
+    {
+      "date": "27-07-2022",
+      "field": "nakshatra",
+      "dp": "60-00",
+      "expected": "2022-07-28T05:19:00+05:30"
+    },
+    {
+      "date": "01-11-2022",
+      "field": "tithi",
+      "dp": "47-07",
+      "expected": "2022-11-02T01:20:48+05:30"
+    },
+    {
+      "date": "01-11-2022",
+      "field": "nakshatra",
+      "dp": "02-25",
+      "expected": "2022-11-01T07:28:00+05:30"
+    }
+  ],
+  "calculation_profiles": [
+    "makaranda-v1",
+    "drik-v1"
+  ]
+}

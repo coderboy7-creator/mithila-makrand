@@ -1,0 +1,14 @@
+{
+  "name": "mithila-makaranda",
+  "version": "0.1.0",
+  "description": "Mithila Makaranda Astrology Platform — production-grade Vedic astrology platform with dedicated Makaranda/Mithila and Drik calculation engines.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "node packages/core/test/runTests.js",
+    "start": "node packages/server/server.js",
+    "validate": "node packages/core/test/goldenReport.js"
+  },
+  "engines": { "node": ">=18" },
+  "workspaces": ["packages/core", "packages/server", "packages/mobile"]
+}
