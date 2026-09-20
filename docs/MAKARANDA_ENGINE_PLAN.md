@@ -93,6 +93,52 @@ Honest budget (printed on the validation page):
 
 Nothing is mixed: each strategy is isolated behind the existing profile/strategy interface, results carry the producing profile, comparison view stays side-by-side.
 
+### Ayanamsa: Chitra-definition (LAHIRI_CITRA) — implemented 2026-09-20
+
+**Why:** the old `drik-v1` default used a *linear* Lahiri model
+(23°51′11.87″ at J2000 + 50.29″/yr). That is a model of the official IMDC
+tables, not the definition itself. The owner-approved fix is the Chitrapaksha
+definition: **Spica (Chitra, α Vir, HIP 65474) pinned at exactly 180°
+sidereal**.
+
+**Implementation** (`packages/core/src/ephemeris.js`):
+- `SPICA_HIPPARCOS` — J2000 RA 201.2982458°, Dec −11.1613199°,
+  pmRA −42.35 mas/yr (cosDec-scaled), pmDec −30.67 mas/yr (parallax and
+  radial velocity negligible for this use).
+- `precessJ2000ToEquatorialOfDate()` — Meeus §21.2 angles (ζ, z, θ),
+  composition Rz(+z)·Ry(+θ)·Rz(+ζ); sign combination locked numerically
+  against Spica's known rates dRA = +47.6″/yr, dDec = −18.7″/yr (test-locked).
+- `spicaMeanLongitude(jdUT)` — proper motion → precession → mean ecliptic of
+  date (ε0, Meeus 22.2 polynomial). **Nutation and aberration excluded** so
+  the ayanamsa stays smooth, matching the character of official tabulated
+  ayanamsas (planets are apparent; the ayanamsa is a mean quantity by
+  tradition — same broad construction as Swiss Ephemeris `TRUE_CITRA`).
+- `ayanamsaDeg("LAHIRI_CITRA", jd)` = norm(spicaMeanLongitude − 180°).
+  Spica's sidereal longitude is therefore exactly 180° by construction.
+
+**Measured behaviour:**
+| Epoch | LAHIRI_CITRA | Δ vs linear LAHIRI |
+|---|---|---|
+| J2000.0 | 23°50′28.9″ | −43.0″ |
+| 2022-08-04 | 24°09′24.0″ | −43.9″ |
+| 2026-09-20 | 24°12′51.5″ | −44.0″ |
+| rate | 50.25″/yr (2000–2030) | — |
+
+The ~−44″ offset is the genuine definitional difference between true Chitra
+(Hipparcos Spica) and the official table scale — the order of magnitude is
+consistent with the known gap between "true Chitra" and tabular Lahiri
+ayanamsas in standard references. No fudge factor applied; both strategies
+remain selectable (`ayanamsaOptions`).
+
+**Locks (runTests.js):** Spica sidereal = 180° (construction), J2000 value
+within 0.02° of published Lahiri anchor (observed 43.0″), rate 50.1–50.4″/yr,
+precession-rate lock. Suite: 106/106.
+
+**Still open (owner-side):** official IMDC/Rashtriya Panchang ayanamsa table
+(2016–2026) for a table-interpolation strategy — third-party web tables were
+found mutually inconsistent and non-monotonic, hence rejected. Expected
+divergence once obtained: <1′ against LAHIRI_CITRA.
+
 ## Answer to "can we build it from scratch?"
 
 The **framework** is already built from scratch (SS pipeline, sunrise, danda-pala, strategies, gate). The **exact traditional behaviour** cannot be — it is proprietary to the university's tradition and must come from items 1–3. The calibration experiment above is the evidence: parameter fitting floors at hours, and the residual signature identifies the missing physics (lunar perturbations) rather than wrong constants.

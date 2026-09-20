@@ -91,9 +91,70 @@ export const SS_PARAMS = {
 /* Ayanamsa strategies                                                 */
 /* ================================================================== */
 
+/* Spica (α Virginis, HIP 65474), Hipparcos catalogue — the anchor star of
+ * the Chitrapaksha (Lahiri) tradition: sidereal longitude pinned to 180°. */
+export const SPICA_HIPPARCOS = {
+  raDeg: 201.2982458,      // J2000 right ascension (13h 25m 11.579s)
+  decDeg: -11.1613199,     // J2000 declination (-11° 09′ 40.75″)
+  pmRaMasYr: -42.35,       // proper motion in RA·cosDec (mas/yr)
+  pmDecMasYr: -30.67,      // proper motion in Dec (mas/yr)
+  source: "Hipparcos (ESA 1997), HIP 65474; parallax/radial velocity negligible for this use",
+};
+
+/** IAU precession J2000 -> mean equator & equinox of date (Meeus 21.2),
+ *  applied to a J2000-equatorial unit vector. Valid ±several centuries. */
+export function precessJ2000ToEquatorialOfDate(xyz, tCenturies) {
+  const t = tCenturies;
+  const arc = (s) => (s / 3600) * (Math.PI / 180);
+  const zeta = arc(2306.2181 * t + 0.30188 * t * t + 0.017998 * t ** 3);
+  const z = arc(2306.2181 * t + 1.09478 * t * t + 0.018318 * t ** 3);
+  const theta = arc(2004.3109 * t - 0.42665 * t * t - 0.041833 * t ** 3);
+  // P = Rz(+z)·Ry(+theta)·Rz(+zeta) — J2000 -> of date. Sign combination
+  // locked numerically against Spica's known precession rates
+  // (dRA = +47.6"/yr, dDec = -18.7"/yr).
+  let [x, y, zc] = xyz;
+  // Rz(+zeta)
+  let x1 = Math.cos(zeta) * x - Math.sin(zeta) * y;
+  let y1 = Math.sin(zeta) * x + Math.cos(zeta) * y;
+  // Ry(+theta)
+  let x2 = Math.cos(theta) * x1 - Math.sin(theta) * zc;
+  let z2 = Math.sin(theta) * x1 + Math.cos(theta) * zc;
+  // Rz(+z)
+  let x3 = Math.cos(z) * x2 - Math.sin(z) * y1;
+  let y3 = Math.sin(z) * x2 + Math.cos(z) * y1;
+  return [x3, y3, z2];
+}
+
+/** MEAN geocentric ecliptic longitude of Spica at jdUT (deg, mean ecliptic
+ *  of date). Pipeline: Hipparcos J2000 + linear proper motion -> precession
+ *  (Meeus 21.2, sign-locked against Spica's known rates). Nutation and
+ *  aberration are deliberately EXCLUDED so the derived ayanamsa stays smooth,
+ *  matching the character of official tabulated ayanamsas (planets are
+ *  apparent; the tabular ayanamsa is a mean quantity by tradition). */
+export function spicaMeanLongitude(jdUT) {
+  const jdTT = jdUT + deltaTSec(jdUT) / 86400;
+  const tCent = (jdTT - J2000) / 36525;
+  const yrs = (jdTT - J2000) / 365.25;
+  // proper motion (mas/yr -> deg); pmRa is already cosDec-scaled
+  const ra = SPICA_HIPPARCOS.raDeg + (SPICA_HIPPARCOS.pmRaMasYr / 3600000) * yrs / cosD(SPICA_HIPPARCOS.decDeg);
+  const dec = SPICA_HIPPARCOS.decDeg + (SPICA_HIPPARCOS.pmDecMasYr / 3600000) * yrs;
+  const xyz = [cosD(dec) * cosD(ra), cosD(dec) * sinD(ra), sinD(dec)];
+  const eq = precessJ2000ToEquatorialOfDate(xyz, tCent); // mean equatorial of date
+  const T = (jdTT - J2000) / 36525;
+  const U = T / 100;
+  const eps0 = 23 + 26 / 60 + 21.448 / 3600 +
+    (-4680.93 * U - 1.55 * U ** 2 + 1999.25 * U ** 3 - 51.38 * U ** 4 - 249.67 * U ** 5 -
+     39.05 * U ** 6 + 7.12 * U ** 7 + 27.87 * U ** 8 + 5.79 * U ** 9 + 2.45 * U ** 10) / 3600;
+  const e = (eps0 * Math.PI) / 180;
+  // mean equatorial of date -> mean ecliptic of date: v_ecl = Rx(-eps0)·v_eq
+  const ye = Math.cos(e) * eq[1] + Math.sin(e) * eq[2];
+  const xe = eq[0];
+  return norm360((Math.atan2(ye, xe) * 180) / Math.PI);
+}
+
 const AYANAMSA_ANCHORS = {
   // { degrees at J2000.0, rate deg/year }. Linear model; ±0.01° over 1900–2100.
-  LAHIRI: { at2000: 23.853297, rate: 50.29 / 3600, source: "Lahiri (Chitrapakshiya), standard" },
+  LAHIRI: { at2000: 23.853297, rate: 50.29 / 3600, source: "Lahiri (Chitrapakshiya), standard linear model aligned to official tables" },
   RAMAN: { at2000: 22.46, rate: 50.29 / 3600, source: "Raman ayanamsa anchor (VERIFY against printed tables)" },
   KRISHNAMURTI: { at2000: 23.9472, rate: 50.29 / 3600, source: "KP ayanamsa anchor (VERIFY)" },
   YUKTESHWAR: { at2000: 20.92, rate: 50.29 / 3600, source: "Yukteshwar anchor (VERIFY)" },
@@ -104,6 +165,10 @@ export function ayanamsaDeg(strategy, jd, { makarandaAnchor2026 = 24.2, makarand
   const year = 2000 + (jd - J2000) / 365.25;
   if (strategy === "MAKARANDA_SS" || strategy === "MAKARANDA_V1_CALIBRATED") {
     return makarandaAnchor2026 + makarandaRate * (year - 2026.0);
+  }
+  if (strategy === "LAHIRI_CITRA") {
+    // Chitrapaksha by definition: Spica (Chitra) pinned at exactly 180° sidereal.
+    return norm360(spicaMeanLongitude(jd) - 180);
   }
   const a = AYANAMSA_ANCHORS[strategy];
   if (!a) throw new Error(`Unknown ayanamsa strategy: ${strategy}`);

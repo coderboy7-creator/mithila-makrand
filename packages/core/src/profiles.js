@@ -112,15 +112,15 @@ const PROFILE_DRIK_V1 = {
     mode: "DRIK",
     label: "Drik / Modern Astronomy",
     tradition: "Drik-ganita",
-    ephemerisSource: "BUILTIN_ANALYTICAL (Meeus solar/lunar theory + JPL Keplerian elements; Swiss-Ephemeris adapter slot reserved)",
+    ephemerisSource: "BUILTIN_ANALYTICAL (Meeus solar/lunar theory + FULL VSOP87D planets + true osculating node; Swiss-Ephemeris adapter slot reserved)",
     swissEphemerisAdapter: { status: "RESERVED", note: "Native Swiss Ephemeris binding to be attached behind this adapter; the built-in analytical ephemeris is the sandbox-safe deterministic backend. Swiss Ephemeris is NEVER treated as proof of Makaranda correctness (master spec §24)." },
     timezone: "Asia/Kolkata",
     tzOffsetHours: 5.5,
     dayBoundary: "LOCAL_SUNRISE",
     obliquity: 23.4392911,
     sunriseModel: "MODERN_REFRACTION", // h0 = -0.833°, refraction + semidiameter
-    ayanamsaOptions: ["LAHIRI", "RAMAN", "KRISHNAMURTI", "YUKTESHWAR", "FAGAN_BRADLEY"],
-    ayanamsa: { strategy: "LAHIRI", status: "VERIFIED_STANDARD" },
+    ayanamsaOptions: ["LAHIRI_CITRA", "LAHIRI", "RAMAN", "KRISHNAMURTI", "YUKTESHWAR", "FAGAN_BRADLEY"],
+    ayanamsa: { strategy: "LAHIRI_CITRA", status: "VERIFIED_CHITRA_DEFINITION", note: "Chitrapaksha by definition: Hipparcos Spica pinned at 180° sidereal (mean ecliptic of date, proper motion included). Differs from the tabular LAHIRI model by ~−44″ (definitional: true Chitra vs official table scale). Switch to LAHIRI for the linear tabular model; official IMDC table interpolation is the documented upgrade when supplied." },
     rulesetVersion: "classical-v1",
 };
 

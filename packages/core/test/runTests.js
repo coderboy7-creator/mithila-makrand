@@ -8,7 +8,7 @@
  */
 
 import { parseDandaPala, parseSourceClock, formatDuration } from "../src/traditionalTime.js";
-import { jdFromDate, dateFromJD, norm360, jdToISO } from "../src/base.js";
+import { jdFromDate, dateFromJD, norm360, jdToISO, cosD, sinD } from "../src/base.js";
 import { GOLDEN_ROWS, DERIVED_NORMALIZATION, formulaDerivedInstant, runGoldenSuite, EPHEM_ANCHORS, PHOTO_PROVISIONAL } from "../src/golden.js";
 import { DRIK_CERT_ANCHORS } from "../src/drikCert.js";
 import { PLANET_CERT_ANCHORS } from "../src/planetCert.js";
@@ -20,7 +20,7 @@ import { vimshottari, nakshatraLord } from "../src/dasha.js";
 import { calculateMilan } from "../src/milan.js";
 import { sadeSatiStatus } from "../src/gochar.js";
 import { calculateMuhurta } from "../src/muhurta.js";
-import { drikTrueSidereal, ssTrueSidereal, positionsFor, drikMoonLongitude, drikSunLongitude, drikMoonState, drikPlanetApparent, drikTrueNode, hybridMoonLongitude, hybridSunLongitude, HYBRID_PARAMS } from "../src/ephemeris.js";
+import { drikTrueSidereal, ssTrueSidereal, positionsFor, drikMoonLongitude, drikSunLongitude, drikMoonState, drikPlanetApparent, drikTrueNode, hybridMoonLongitude, hybridSunLongitude, HYBRID_PARAMS, ayanamsaDeg, spicaMeanLongitude, precessJ2000ToEquatorialOfDate, SPICA_HIPPARCOS } from "../src/ephemeris.js";
 import { ascendantSidereal } from "../src/chart.js";
 
 let passed = 0, failed = 0;
@@ -107,6 +107,37 @@ test("lagna at sunrise ≈ solar longitude (astronomy self-check)", () => {
   if (d > 180) d = 360 - d;
   approx(d, 0, 3, "ascendant vs sun at sunrise");
 });
+
+console.log("\n[LahiriCitraTest — Chitrapaksha definition (Spica = 180° sidereal)]");
+{
+  const D2R = Math.PI / 180;
+  const jdJ2000 = 2451545.0; // TT ≈ UT at epoch; ΔT irrelevant at this tolerance
+  const citraJ2000 = ayanamsaDeg("LAHIRI_CITRA", jdJ2000);
+  test("Chitra identity: Spica sidereal longitude is exactly 180° by construction", () => {
+    const sid = norm360(spicaMeanLongitude(jdJ2000) - ayanamsaDeg("LAHIRI_CITRA", jdJ2000));
+    approx(Math.min(sid, 360 - sid) === 0 ? 0 : Math.abs(sid - 180), 0, 1e-9, "Spica sidereal lon");
+  });
+  test(`LAHIRI_CITRA at J2000 within 0.02° of published Lahiri anchor (obs ${(Math.abs(citraJ2000 - 23.853297) * 3600).toFixed(1)}")`, () => {
+    if (Math.abs(citraJ2000 - 23.853297) > 0.02) throw new Error(`Citra ayanamsa J2000 = ${citraJ2000.toFixed(6)}° vs 23.853297°`);
+  });
+  test("LAHIRI_CITRA advances 50.1–50.4 \"/yr over 2000–2030", () => {
+    const y0 = ayanamsaDeg("LAHIRI_CITRA", jdJ2000);
+    const y30 = ayanamsaDeg("LAHIRI_CITRA", jdJ2000 + 30 * 365.25);
+    const rate = ((y30 - y0) * 3600) / 30;
+    if (rate < 50.1 || rate > 50.4) throw new Error(`rate ${rate.toFixed(3)} "/yr`);
+  });
+  test("Precession locked: Spica dRA ≈ +47.6\"/yr, dDec ≈ −18.7\"/yr (J2000 rates)", () => {
+    const t = 0.25; // 25 yr
+    const r0 = SPICA_HIPPARCOS;
+    const xyz = [cosD(r0.decDeg) * cosD(r0.raDeg), cosD(r0.decDeg) * sinD(r0.raDeg), sinD(r0.decDeg)];
+    const eq = precessJ2000ToEquatorialOfDate(xyz, t);
+    const ra = Math.atan2(eq[1], eq[0]) / D2R, dec = Math.asin(eq[2]) / D2R;
+    const dRA = (((ra - r0.raDeg + 540) % 360) - 180) * 3600 / (t * 100);
+    const dDec = (dec - r0.decDeg) * 3600 / (t * 100);
+    approx(dRA, 47.6, 0.3, "dRA/dt");
+    approx(dDec, -18.7, 0.3, "dDec/dt");
+  });
+}
 
 console.log("\n[TithiBoundaryTest / NakshatraBoundaryTest]");
 test("tithi boundary lands exactly on a 12° multiple (Drik)", () => {

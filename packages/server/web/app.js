@@ -220,7 +220,15 @@ function renderChrome() {
   $$("#nav a").forEach((a) => (a.onclick = () => { location.hash = "#/" + a.dataset.route; }));
   $("#global-method-label").textContent = profileLabel(state.globalProfile);
   $("#profile-chip").textContent = `${t("profile")}: ${state.globalProfile}`;
-  $("#ayanamsa-chip").textContent = `${t("ayanamsa")}: ${state.globalProfile === "drik-v1" ? "Lahiri" : state.globalProfile === "makaranda-v2-hybrid" ? "Makaranda (hybrid fit)" : "Makaranda"}`;
+  {
+    const prof = state.profiles?.profiles?.[state.globalProfile];
+    const strat = prof?.ayanamsa?.strategy;
+    const AY_NAMES = { LAHIRI_CITRA: "Lahiri · Chitra", LAHIRI: "Lahiri (tabular)", RAMAN: "Raman", KRISHNAMURTI: "Krishnamurti", YUKTESHWAR: "Yukteshwar", FAGAN_BRADLEY: "Fagan–Bradley" };
+    const ayLabel = state.globalProfile === "makaranda-v2-hybrid" ? "Makaranda (hybrid fit)"
+      : state.globalProfile === "makaranda-v1" ? "Makaranda"
+      : (AY_NAMES[strat] || strat || "Lahiri · Chitra");
+    $("#ayanamsa-chip").textContent = `${t("ayanamsa")}: ${ayLabel}`;
+  }
   $("#brand-sub").textContent = t("brandSub");
   $("#side-note").textContent = t("sideNote");
   $("#lang-btn").textContent = t("langBtn");

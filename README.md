@@ -15,7 +15,7 @@ that interprets — but never calculates.
 | Profile | Engine | Status |
 |---|---|---|
 | `makaranda-v1` (default) | Surya Siddhanta / Makaranda tradition | Release gate NOT PASSED by design — awaiting university worksheets |
-| `drik-v1` | Modern analytical ephemeris — full Meeus ch.47 lunar λ/β/Δ, FULL VSOP87D planets, true osculating Rahu, complete IAU-1980 nutation, ΔT, PyEphem-certified grid | **VERIFIED**: moon λ ≤7.3″ · sun ≤33.7″ · planets λ ≤1.09″ · true Rahu ≤112″ (locked) over 2016–2030 |
+| `drik-v1` | Modern analytical ephemeris — full Meeus ch.47 lunar λ/β/Δ, FULL VSOP87D planets, true osculating Rahu, complete IAU-1980 nutation, ΔT, PyEphem-certified grid; ayanamsa **LAHIRI_CITRA** (Chitrapaksha by definition: Hipparcos Spica pinned at 180°, mean ecliptic of date) | **VERIFIED**: moon λ ≤7.3″ · sun ≤33.7″ · planets λ ≤1.09″ · true Rahu ≤112″ (locked) over 2016–2030 |
 | `makaranda-v2-hybrid` | Modern-anchored means + classical perturbation series, fitted offsets `{dM:+0.37, dA:0, dS:0}` | **UNVERIFIED_HYBRID** — experimental bridge only; never mixed into other pipelines; superseded by `makaranda-v2-tables` when the worksheets arrive |
 
 The hybrid tracks the printed Panchang within the traditional residual band
@@ -29,7 +29,7 @@ evidence and the owner requirements that unlock the authoritative tradition.
 ## Quick start
 
 ```bash
-npm test          # golden suite: 78 hard tests (incl. 8 PyEphem-certified ephemeris anchors) + release-gate report
+npm test          # golden suite: 106 hard tests (incl. 8 PyEphem-certified ephemeris anchors + 4 Chitra-ayanamsa locks) + release-gate report
 
 ## Language
 UI defaults to **Hindi**; a persistent toggle (top-bar `EN` button, also in Settings) switches to English.
@@ -71,8 +71,11 @@ Every calculation request resolves an **explicit** `profileId`
   interpretation is versioned (`longitudeResolution` strategies, H1 selected,
   UNVERIFIED) — no silent Darbhanga/Sitamarhi substitution.
 - **DRIK** — independent modern analytical ephemeris (Meeus solar/lunar,
-  JPL Keplerian planets, mean node) with Lahiri/Raman/KP/Yukteshwar/Fagan
-  ayanamsas. Swiss Ephemeris adapter slot reserved.
+  FULL VSOP87D planets, true osculating node) with ayanamsa **LAHIRI_CITRA**
+  by default (Chitra-definition: Spica = 180°; differs from the linear
+  tabular LAHIRI model by ≈−44″, a definitional offset — both selectable,
+  plus Raman/KP/Yukteshwar/Fagan). Swiss Ephemeris adapter slot reserved;
+  official IMDC table interpolation is the documented upgrade when supplied.
 
 Engines are never combined in one pipeline; comparison is side-by-side only.
 
