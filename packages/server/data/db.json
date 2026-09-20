@@ -110,6 +110,198 @@
   "saved_kundalis": [],
   "audit_logs": [
     {
+      "ts": "2026-09-20T10:25:56.375Z",
+      "endpoint": "/api/v1/panchang/calculate",
+      "calculationMode": "makaranda-v1",
+      "profileVersion": null,
+      "date": "2026-09-20",
+      "locationSource": "DEFAULT"
+    },
+    {
+      "ts": "2026-09-20T10:25:54.904Z",
+      "endpoint": "/api/v1/panchang/calculate",
+      "calculationMode": "makaranda-v1",
+      "profileVersion": null,
+      "date": "2026-09-20",
+      "locationSource": "DEFAULT"
+    },
+    {
+      "ts": "2026-09-20T10:25:53.428Z",
+      "endpoint": "/api/v1/prashna/calculate",
+      "calculationMode": "makaranda-v1",
+      "profileVersion": null,
+      "date": "",
+      "locationSource": "USER_PROVIDED"
+    },
+    {
+      "ts": "2026-09-20T10:25:53.427Z",
+      "endpoint": "/api/v1/varshaphal/calculate",
+      "calculationMode": "makaranda-v1",
+      "profileVersion": null,
+      "date": "",
+      "locationSource": "USER_PROVIDED"
+    },
+    {
+      "ts": "2026-09-20T10:25:53.425Z",
+      "endpoint": "/api/v1/prashna/calculate",
+      "calculationMode": "makaranda-v1",
+      "profileVersion": null,
+      "date": "",
+      "locationSource": "USER_PROVIDED"
+    },
+    {
+      "ts": "2026-09-20T10:25:53.423Z",
+      "endpoint": "/api/v1/panchang/calculate",
+      "calculationMode": "makaranda-v1",
+      "profileVersion": null,
+      "date": "2026-09-20",
+      "locationSource": "DEFAULT"
+    },
+    {
+      "ts": "2026-09-20T10:25:51.932Z",
+      "endpoint": "/api/v1/varshaphal/calculate",
+      "calculationMode": "makaranda-v1",
+      "profileVersion": null,
+      "date": "",
+      "locationSource": "USER_PROVIDED"
+    },
+    {
+      "ts": "2026-09-20T10:25:51.929Z",
+      "endpoint": "/api/v1/panchang/calculate",
+      "calculationMode": "makaranda-v1",
+      "profileVersion": null,
+      "date": "2026-09-20",
+      "locationSource": "DEFAULT"
+    },
+    {
+      "ts": "2026-09-20T10:25:50.383Z",
+      "endpoint": "/api/v1/panchang/calculate",
+      "calculationMode": "makaranda-v1",
+      "profileVersion": null,
+      "date": "2026-09-20",
+      "locationSource": "DEFAULT"
+    },
+    {
+      "ts": "2026-09-20T10:25:50.381Z",
+      "endpoint": "/api/v1/dasha/calculate",
+      "calculationMode": "makaranda-v1",
+      "profileVersion": null,
+      "date": "",
+      "locationSource": "USER_PROVIDED"
+    },
+    {
+      "ts": "2026-09-20T10:25:50.379Z",
+      "endpoint": "/api/v1/panchang/calculate",
+      "calculationMode": "makaranda-v1",
+      "profileVersion": null,
+      "date": "2026-09-20",
+      "locationSource": "DEFAULT"
+    },
+    {
+      "ts": "2026-09-20T10:25:50.377Z",
+      "endpoint": "/api/v1/kundali/calculate",
+      "calculationMode": "makaranda-v1",
+      "profileVersion": null,
+      "date": "",
+      "locationSource": "USER_PROVIDED"
+    },
+    {
+      "ts": "2026-09-20T10:25:50.376Z",
+      "endpoint": "/api/v1/panchang/calculate",
+      "calculationMode": "makaranda-v1",
+      "profileVersion": null,
+      "date": "2026-09-20",
+      "locationSource": "DEFAULT"
+    },
+    {
+      "ts": "2026-09-20T10:25:48.889Z",
+      "endpoint": "/api/v1/kundali/calculate",
+      "calculationMode": "makaranda-v1",
+      "profileVersion": null,
+      "date": "",
+      "locationSource": "USER_PROVIDED"
+    },
+    {
+      "ts": "2026-09-20T10:25:48.886Z",
+      "endpoint": "/api/v1/panchang/calculate",
+      "calculationMode": "makaranda-v1",
+      "profileVersion": null,
+      "date": "2026-09-20",
+      "locationSource": "DEFAULT"
+    },
+    {
+      "ts": "2026-09-20T10:25:48.874Z",
+      "endpoint": "/api/v1/panchang/calculate",
+      "calculationMode": "makaranda-v1",
+      "profileVersion": null,
+      "date": "2026-09-20",
+      "locationSource": "DEFAULT"
+    },
+    {
+      "ts": "2026-09-20T10:25:47.278Z",
+      "endpoint": "/api/v1/panchang/calculate",
+      "calculationMode": "makaranda-v1",
+      "profileVersion": null,
+      "date": "2026-09-20",
+      "locationSource": "DEFAULT"
+    },
+    {
+      "ts": "2026-09-20T10:25:45.796Z",
+      "endpoint": "/api/v1/panchang/calculate",
+      "calculationMode": "makaranda-v1",
+      "profileVersion": null,
+      "date": "2026-09-20",
+      "locationSource": "DEFAULT"
+    },
+    {
+      "ts": "2026-09-20T10:25:44.339Z",
+      "endpoint": "/api/v1/panchang/calculate",
+      "calculationMode": "makaranda-v1",
+      "profileVersion": null,
+      "date": "2026-09-20",
+      "locationSource": "DEFAULT"
+    },
+    {
+      "ts": "2026-09-20T10:25:42.892Z",
+      "endpoint": "/api/v1/panchang/calculate",
+      "calculationMode": "makaranda-v1",
+      "profileVersion": null,
+      "date": "2026-09-20",
+      "locationSource": "DEFAULT"
+    },
+    {
+      "ts": "2026-09-20T10:25:38.470Z",
+      "endpoint": "/api/v1/panchang/calculate",
+      "calculationMode": "makaranda-v1",
+      "profileVersion": null,
+      "date": "2026-09-20",
+      "locationSource": "DEFAULT"
+    },
+    {
+      "ts": "2026-09-20T10:25:38.469Z",
+      "endpoint": "/api/v1/dasha/calculate",
+      "calculationMode": "makaranda-v1",
+      "profileVersion": null,
+      "date": "",
+      "locationSource": "USER_PROVIDED"
+    },
+    {
+      "ts": "2026-09-20T10:25:38.463Z",
+      "endpoint": "/api/v1/kundali/calculate",
+      "calculationMode": "makaranda-v1",
+      "profileVersion": null,
+      "date": "",
+      "locationSource": "USER_PROVIDED"
+    },
+    {
+      "ts": "2026-09-20T10:25:35.362Z",
+      "endpoint": "/api/v1/panchang/calculate",
+      "calculationMode": "makaranda-v1",
+      "profileVersion": null,
+      "date": "2026-09-20",
+      "locationSource": "DEFAULT"
+    },
+    {
       "ts": "2026-09-20T10:11:57.516Z",
       "endpoint": "/api/v1/panchang/calculate",
       "calculationMode": "makaranda-v1",

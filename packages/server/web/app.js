@@ -295,22 +295,30 @@ const SIGN_ABBR = ["Mes", "Vri", "Gem", "Kan", "Leo", "Vir", "Lib", "Vrs", "Dha"
 const PLANET_ABBR = { Sun: "Su", Moon: "Mo", Mars: "Ma", Mercury: "Me", Jupiter: "Ju", Venus: "Ve", Saturn: "Sa", Rahu: "Ra", Ketu: "Ke" };
 const SIGN_ABBR_DEV = ["मेष", "वृष", "मिथु", "कर्क", "सिंह", "कन्या", "तुला", "वृश्च", "धनु", "मकर", "कुंभ", "मीन"];
 const PLANET_ABBR_DEV = { Sun: "सू", Moon: "चं", Mars: "मं", Mercury: "बु", Jupiter: "गु", Venus: "शु", Saturn: "श", Rahu: "रा", Ketu: "के" };
+const PLANET_COLORS = { Sun: "#ffb45e", Moon: "#8fd0ff", Mars: "#ff7d7d", Mercury: "#5ee0a1", Jupiter: "#f6cf6f", Venus: "#ff9ecf", Saturn: "#8fb0ff", Rahu: "#e26ee5", Ketu: "#b28bff" };
 const chartSignAbbr = (i) => (HI() ? SIGN_ABBR_DEV[i] : SIGN_ABBR[i]);
 const chartPlanetAbbr = (n) => (HI() ? PLANET_ABBR_DEV[n] ?? n : PLANET_ABBR[n] ?? n);
 function chartDeg(lon) { const d = lon % 30; const dd = Math.floor(d); const mm = Math.floor((d - dd) * 60); return `${dd}°${String(mm).padStart(2, "0")}′`; }
 function chartEntries(sign, signOccupants, positions) {
   const names = signOccupants[sign] || [];
-  if (!positions) return names.filter((n) => n !== "Lagna").map((n) => ({ label: chartPlanetAbbr(n) }));
+  if (!positions) return names.filter((n) => n !== "Lagna").map((n) => ({ label: chartPlanetAbbr(n), cls: "p-" + n }));
   return names.filter((n) => n !== "Lagna").map((n) => {
     const p = positions.find((x) => x.name === n);
-    return p ? { label: `${chartPlanetAbbr(n)} ${chartDeg(p.longitude)}${p.retrograde ? (HI() ? "(व)" : "(R)") : ""}` } : { label: chartPlanetAbbr(n) };
+    return p ? { label: `${chartPlanetAbbr(n)} ${chartDeg(p.longitude)}${p.retrograde ? (HI() ? "(व)" : "(R)") : ""}`, cls: "p-" + n } : { label: chartPlanetAbbr(n), cls: "p-" + n };
   });
 }
 function chartHouseText(ax, ay, signLabel, entries, rowH) {
   const startY = ay - (entries.length * rowH) / 2 + 4;
   let s = `<text x="${ax}" y="${startY}" class="ch-sign">${signLabel}</text>`;
-  entries.forEach((e, i) => { s += `<text x="${ax}" y="${startY + (i + 1) * rowH}" class="ch-planet">${e.label}</text>`; });
+  entries.forEach((e, i) => { s += `<text x="${ax}" y="${startY + (i + 1) * rowH}" class="ch-planet ${e.cls}">${e.label}</text>`; });
   return s;
+}
+let chartUid = 0;
+function chartGlowBg(S) {
+  const id = "cbg" + (++chartUid);
+  return `<defs><radialGradient id="${id}" cx="50%" cy="44%" r="74%">
+<stop offset="0%" stop-color="rgba(246,207,111,.14)"/><stop offset="52%" stop-color="rgba(140,90,25,.07)"/><stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+</radialGradient></defs><rect x="4" y="4" width="${S - 8}" height="${S - 8}" rx="10" fill="url(#${id})"/>`;
 }
 function northChartSVG(lagnaSign, signOccupants, positions) {
   const S = 440, M = 220;
@@ -322,7 +330,7 @@ function northChartSVG(lagnaSign, signOccupants, positions) {
     g += chartHouseText(ax, ay, chartSignAbbr(sign) + (h === 0 ? (HI() ? " · लग्न" : " · Lag") : ""), chartEntries(sign, signOccupants, positions), 17);
   }
   return `<svg class="chart-svg" viewBox="0 0 ${S} ${S}" role="img" aria-label="North Indian chart">
-<rect x="3" y="3" width="${S - 6}" height="${S - 6}" class="ch-frame"/>
+${chartGlowBg(S)}<rect x="3" y="3" width="${S - 6}" height="${S - 6}" class="ch-frame"/>
 <path d="M3,3 L${S-3},${S-3} M${S-3},3 L3,${S-3} M${M},3 L${S-3},${M} L${M},${S-3} L3,${M} Z" class="ch-line"/>
 ${g}</svg>`;
 }
@@ -338,7 +346,7 @@ function eastChartSVG(lagnaSign, houseOccupantsBySign, positions) {
   ring.forEach(([cx, cy], i) => { g += cell((lagnaSign + i) % 12, cx * W, cy * Hh, W, Hh, i === 0); });
   g += cell((lagnaSign + 10) % 12, W, Hh, W, Hh, false);
   g += cell((lagnaSign + 11) % 12, W, 2 * Hh, W, Hh, false);
-  return `<svg class="chart-svg" viewBox="0 0 ${S} ${S}" role="img" aria-label="East Indian chart">${g}</svg>`;
+  return `<svg class="chart-svg" viewBox="0 0 ${S} ${S}" role="img" aria-label="East Indian chart">${chartGlowBg(S)}${g}</svg>`;
 }
 function southChartSVG(lagnaSign, signOccupants, markAsLagna = true, positions) {
   const S = 440, C = 110;
@@ -352,11 +360,11 @@ function southChartSVG(lagnaSign, signOccupants, markAsLagna = true, positions) 
     if (isL) g += `<line x1="${x}" y1="${y}" x2="${x + 26}" y2="${y + 26}" class="ch-lagna"/>`;
     g += chartHouseText(x + C / 2, y + C / 2 - 8, chartSignAbbr(sign) + (isL ? (HI() ? " · लग्न" : " · Lag") : ""), chartEntries(sign, signOccupants, positions), 16);
   }
-  return `<svg class="chart-svg" viewBox="0 0 ${S} ${S}" role="img" aria-label="South Indian chart">${g}</svg>`;
+  return `<svg class="chart-svg" viewBox="0 0 ${S} ${S}" role="img" aria-label="South Indian chart">${chartGlowBg(S)}${g}</svg>`;
 }
 function chartLegend(positions) {
   if (!positions) return "";
-  return `<div class="chart-legend">${positions.filter((p) => p.name !== "Lagna").map((p) => `<span><b>${chartPlanetAbbr(p.name)}</b> ${chartSignAbbr(p.sign)} ${chartDeg(p.longitude)}${p.retrograde ? ` <em>${HI() ? "(व)" : "(R)"}</em>` : ""}</span>`).join("")}</div>`;
+  return `<div class="chart-legend">${positions.filter((p) => p.name !== "Lagna").map((p) => `<span><b class="${"p-" + p.name}">${chartPlanetAbbr(p.name)}</b> ${chartSignAbbr(p.sign)} ${chartDeg(p.longitude)}${p.retrograde ? ` <em>${HI() ? "(व)" : "(R)"}</em>` : ""}</span>`).join("")}</div>`;
 }
 
 /* ---------------- shared UI bits ---------------- */
@@ -498,8 +506,12 @@ const pages = {};
 
 pages["dashboard"] = async (el) => {
   el.innerHTML = `
-  <h1>${HI() ? "मिथिला मकरंद" : "Mithila Makaranda"}</h1>
-  <div class="muted">${HI() ? "प्रोडक्शन-ग्रेड वैदिक ज्योतिष प्लेटफ़ॉर्म · मकरंदानुसार / मिथिला विश्वविद्यालय पंचांग पद्धति डिफ़ॉल्ट गणना प्रोफ़ाइल के रूप में।" : "Production-grade Vedic astrology platform · Makarandaanushar / Mithila Vishwavidyalaya Panchang methodology as the default calculation profile."}</div>
+  <div class="hero">
+    <div class="om">ॐ</div>
+    <h1>${HI() ? "मिथिला मकरंद" : "Mithila Makaranda"}</h1>
+    <div class="tagline muted">${HI() ? "प्रोडक्शन-ग्रेड वैदिक ज्योतिष प्लेटफ़ॉर्म · मकरंदानुसार / मिथिला विश्वविद्यालय पंचांग पद्धति डिफ़ॉल्ट गणना प्रोफ़ाइल के रूप में।" : "Production-grade Vedic astrology platform · Makarandaanushar / Mithila Vishwavidyalaya Panchang methodology as the default calculation profile."}</div>
+    <div class="row"><span class="badge gold">${HI() ? "निर्धारक इंजन" : "Deterministic engines"}</span><span class="badge blue">LLM ≠ ${HI() ? "गणना" : "calculation"}</span><span class="badge green">DRIK ${HI() ? "प्रमाणित" : "certified"}</span></div>
+  </div>
   <div class="banner" style="margin-top:14px">${esc(state.profiles?.banners?.makaranda ?? "Calculation Method: Makaranda / Mithila\nProfile: makaranda-v1")}</div>
   <div class="grid cols-4" style="margin-top:18px">
     <div class="card stat"><div class="v" id="d-gate">…</div><div class="k">${t("gateTitle")}</div></div>
