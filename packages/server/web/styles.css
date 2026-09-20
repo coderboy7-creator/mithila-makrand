@@ -207,3 +207,19 @@ h1, h2, h3 { font-family: Georgia, "Noto Sans Devanagari", "Times New Roman", se
 .tag.gold { color: var(--gold2); border-color: rgba(216,169,68,.5); background: rgba(216,169,68,.12); }
 .formline .check { margin-bottom: 9px; }
 .formline label { margin-top: 0; }
+
+/* ---- place autocomplete (offline gazetteer) ---- */
+.geo-wrap { position: relative; }
+.geo-hint { font-size: 11px; color: var(--muted); margin-top: 2px; min-height: 14px; letter-spacing: .2px; }
+.geo-dd {
+  position: absolute; top: calc(100% + 2px); left: 0; right: 0; z-index: 60;
+  background: var(--panel2); border: 1px solid var(--line); border-radius: 10px;
+  box-shadow: var(--shadow); max-height: 280px; overflow-y: auto;
+}
+.geo-item { padding: 8px 12px; cursor: pointer; border-bottom: 1px solid var(--line); }
+.geo-item:last-child { border-bottom: none; }
+.geo-item.active, .geo-item:hover { background: var(--panel3); }
+.geo-item b { font-weight: 600; color: var(--text); }
+.geo-item .geo-hi { color: var(--gold2); font-size: 12px; margin-left: 6px; }
+.geo-item small { display: block; color: var(--muted); font-size: 11px; margin-top: 1px; }
+.geo-empty { padding: 10px 12px; color: var(--muted); font-size: 13px; }

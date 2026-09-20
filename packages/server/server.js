@@ -17,6 +17,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import * as Core from "../core/src/index.js";
+import { CITIES } from "./data/gazetteer.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const WEB_DIR = path.join(__dirname, "web");
@@ -130,6 +131,49 @@ const routes = {
       profiles: Core.PROFILES,
       banners: { makaranda: Core.methodBanner(Core.createContext({ profileId: "makaranda-v1", date: "2026-09-19" })), drik: Core.methodBanner(Core.createContext({ profileId: "drik-v1", date: "2026-09-19" })) },
     });
+  },
+
+  // Offline place lookup — deterministic gazetteer, no external geocoding.
+  "GET /api/v1/geo/search": async (req, res) => {
+    const url = new URL(req.url, "http://localhost");
+    const q = (url.searchParams.get("q") ?? "").trim();
+    const limit = Math.min(Math.max(parseInt(url.searchParams.get("limit") ?? "8", 10) || 8, 1), 15);
+    if (!q) return json(res, 200, { results: [] });
+    const norm = (s) => String(s ?? "").toLowerCase().normalize("NFC");
+    const nq = norm(q);
+    const tokens = nq.split(/\s+/).filter(Boolean);
+    const scoreOf = (row) => {
+      const [n, hi, r] = row;
+      const hay = [norm(n), norm(hi), norm(r)];
+      let score = 0;
+      for (const tk of tokens) {
+        let best = 0;
+        for (const h of hay) {
+          if (!h) continue;
+          let s = 0;
+          if (h === tk) s = 100;
+          else if (h.startsWith(tk)) s = 80;
+          else {
+            const w = h.split(/[\s(,]+/).find((x) => x.startsWith(tk));
+            if (w) s = 66;
+            else if (h.includes(tk)) s = 40;
+          }
+          if (s > best) best = s;
+        }
+        if (!best) return 0; // every token must match somewhere
+        score += best;
+      }
+      // small bias toward more-populated/well-known places via region bonus
+      if (norm(n).startsWith(nq)) score += 12;
+      return score / tokens.length;
+    };
+    const results = CITIES
+      .map((row) => ({ row, score: scoreOf(row) }))
+      .filter((x) => x.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit)
+      .map(({ row }) => ({ name: row[0], hi: row[1], region: row[2], country: row[3], latitude: row[4], longitude: row[5] }));
+    json(res, 200, { results });
   },
 
   "POST /api/v1/panchang/calculate": async (req, res, body, db) => {

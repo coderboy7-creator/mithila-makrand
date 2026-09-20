@@ -43,7 +43,7 @@ const I18N = {
     badgeHybrid: "Calculation Method: Makaranda v2 Hybrid · Profile: makaranda-v2-hybrid · Status: UNVERIFIED_HYBRID",
     overrideFlag: "feature override (global is", resetGlobal: "Reset to Global",
     calc: "Calculate", compare: "Compare Makaranda vs Drik", date: "Date", time: "Time",
-    dob: "Date of birth", tob: "Time of birth", name: "Name (optional)", place: "Place", lat: "Latitude", lon: "Longitude", presets: "Presets:",
+    dob: "Date of birth", tob: "Time of birth", name: "Name (optional)", place: "Place", placePh: "Type a place — pick from suggestions", lat: "Latitude", lon: "Longitude", presets: "Presets:",
     generate: "Generate Kundali", analyse: "Analyse", match: "Match", scan: "Scan windows", computeAnnual: "Compute annual chart", castPrashna: "Cast prashna chart", genReport: "Generate report", print: "🖨 Print / Save PDF", book: "Book", cancel: "Cancel", apply: "Apply", done: "Done", interpret: "Interpret",
     north: "North Indian", south: "South Indian", east: "East Indian",
     aiTitle: "AI interpretation", aiBadge: "engine JSON only — LLM never calculates", aiIdle: "Deterministic interpreter + LLM adapter slot available.",
@@ -84,7 +84,7 @@ const I18N = {
     badgeHybrid: "गणना विधि: मकरंद v2 हाइब्रिड · प्रोफ़ाइल: makaranda-v2-hybrid · स्थिति: अनसत्यापित हाइब्रिड",
     overrideFlag: "फीचर ओवरराइड (ग्लोबल है", resetGlobal: "ग्लोबल पर लौटें",
     calc: "गणना करें", compare: "मकरंद बनाम दृक् तुलना", date: "दिनांक", time: "समय",
-    dob: "जन्म तिथि", tob: "जन्म समय", name: "नाम (वैकल्पिक)", place: "स्थान", lat: "अक्षांश", lon: "देशांतर", presets: "प्रीसेट:",
+    dob: "जन्म तिथि", tob: "जन्म समय", name: "नाम (वैकल्पिक)", place: "स्थान", placePh: "स्थान लिखें — सूची से चुनें", lat: "अक्षांश", lon: "देशांतर", presets: "प्रीसेट:",
     generate: "कुंडली बनाएँ", analyse: "विश्लेषण करें", match: "मिलान करें", scan: "मुहूर्त खोजें", computeAnnual: "वार्षिक कुंडली बनाएँ", castPrashna: "प्रश्न कुंडली बनाएँ", genReport: "प्रतिवेदन बनाएँ", print: "🖨 प्रिंट / PDF", book: "बुक करें", cancel: "रद्द करें", apply: "लागू करें", done: "ठीक है", interpret: "व्याख्या करें",
     north: "उत्तर भारतीय", south: "दक्षिण भारतीय", east: "पूर्व भारतीय",
     aiTitle: "AI व्याख्या", aiBadge: "केवल इंजन JSON — LLM गणना कभी नहीं", aiIdle: "निर्धारक व्याख्याकार + LLM एडाप्टर स्लॉट उपलब्ध।",
@@ -368,7 +368,7 @@ function birthFormHTML(prefix = "") {
     <div><label>${t("dob")}</label><input type="date" id="${prefix}b-date" value="${b.date}"></div>
     <div><label>${t("tob")}</label><input type="time" step="1" id="${prefix}b-time" value="${b.time}"></div>
     <div><label>${t("name")}</label><input id="${prefix}b-name" value="${esc(b.name)}"></div>
-    <div><label>${t("place")}</label><input id="${prefix}b-place" value="${esc(b.place)}"></div>
+    <div><label>${t("place")}</label><div class="geo-wrap"><input id="${prefix}b-place" data-geo data-geo-lat="${prefix}b-lat" data-geo-lon="${prefix}b-lon" autocomplete="off" placeholder="${t("placePh")}" value="${esc(b.place)}"><div class="geo-hint" id="${prefix}b-geo-hint"></div></div></div>
     <div><label>${t("lat")}</label><input id="${prefix}b-lat" type="number" step="0.0001" value="${b.lat}"></div>
     <div><label>${t("lon")}</label><input id="${prefix}b-lon" type="number" step="0.0001" value="${b.lon}"></div>
   </div>
@@ -388,6 +388,79 @@ document.addEventListener("click", (e) => {
     const [la, lo, n] = e.target.dataset.preset.split(",");
     state.birth.lat = +la; state.birth.lon = +lo; state.birth.place = n; persist(); route();
   }
+});
+
+/* ---------- place autocomplete (offline gazetteer via /api/v1/geo/search) ---------- */
+let geoSeq = 0;
+function geoClose(input) {
+  const dd = document.getElementById(input.dataset.geoDd || "");
+  if (dd) dd.remove();
+  input.removeAttribute("data-geo-dd");
+}
+function geoHint(input, r) {
+  const wrap = input.closest(".geo-wrap");
+  const hint = wrap && wrap.querySelector(".geo-hint");
+  if (!hint) return;
+  hint.textContent = r
+    ? `${Math.abs(r.latitude).toFixed(4)}° ${r.latitude >= 0 ? "N" : "S"} · ${Math.abs(r.longitude).toFixed(4)}° ${r.longitude >= 0 ? "E" : "W"} · ${r.region && r.region !== "—" ? r.region + ", " : ""}${r.country}`
+    : "";
+}
+function geoSelect(input, r) {
+  input.value = r.name;
+  const la = document.getElementById(input.dataset.geoLat || ""), lo = document.getElementById(input.dataset.geoLon || "");
+  if (la) la.value = r.latitude.toFixed(4);
+  if (lo) lo.value = r.longitude.toFixed(4);
+  geoHint(input, r);
+  if (input.id.endsWith("b-place")) { state.birth.place = r.name; state.birth.lat = r.latitude; state.birth.lon = r.longitude; persist(); }
+  geoClose(input);
+}
+function geoRender(input, results) {
+  if (!results.length) { geoClose(input); return; }
+  let dd = document.getElementById(input.dataset.geoDd || "");
+  if (!dd) {
+    dd = document.createElement("div");
+    dd.className = "geo-dd";
+    dd.id = "geo-dd-" + (++geoSeq);
+    input.dataset.geoDd = dd.id;
+    (input.closest(".geo-wrap") || input.parentNode).appendChild(dd);
+  }
+  dd.dataset.results = JSON.stringify(results);
+  dd.innerHTML = results.map((r, i) => `<div class="geo-item${i === 0 ? " active" : ""}" data-geo-i="${i}"><span><b>${esc(r.name)}</b>${r.hi && r.hi !== "—" ? `<span class="geo-hi">${esc(r.hi)}</span>` : ""}</span><small>${esc(r.region && r.region !== "—" ? r.region + " · " : "")}${esc(r.country)} · ${r.latitude.toFixed(2)}°, ${r.longitude.toFixed(2)}°</small></div>`).join("");
+  dd.querySelectorAll(".geo-item").forEach((el) => {
+    el.addEventListener("mousedown", (e) => { e.preventDefault(); geoSelect(input, results[+el.dataset.geoI]); });
+  });
+}
+document.addEventListener("input", (e) => {
+  const input = e.target.closest ? e.target.closest("[data-geo]") : null;
+  if (!input) return;
+  clearTimeout(input._geoTimer);
+  const q = input.value.trim();
+  geoHint(input, null);
+  if (q.length < 1) { geoClose(input); return; }
+  input._geoTimer = setTimeout(async () => {
+    const seq = ++geoSeq; input._geoSeq = seq;
+    try {
+      const r = await api(`/api/v1/geo/search?q=${encodeURIComponent(q)}`);
+      if (input._geoSeq !== seq || !input.isConnected) return;
+      geoRender(input, r.results || []);
+    } catch { /* network hiccup — stay silent */ }
+  }, 180);
+});
+document.addEventListener("keydown", (e) => {
+  const input = e.target.closest ? e.target.closest("[data-geo]") : null;
+  if (!input) return;
+  const dd = document.getElementById(input.dataset.geoDd || "");
+  if (!dd) return;
+  const items = [...dd.querySelectorAll(".geo-item")];
+  if (!items.length) return;
+  const cur = items.findIndex((el) => el.classList.contains("active"));
+  if (e.key === "ArrowDown") { e.preventDefault(); items[cur]?.classList.remove("active"); items[(cur + 1) % items.length].classList.add("active"); }
+  else if (e.key === "ArrowUp") { e.preventDefault(); items[cur]?.classList.remove("active"); items[(cur - 1 + items.length) % items.length].classList.add("active"); }
+  else if (e.key === "Enter") { e.preventDefault(); const sel = items.find((el) => el.classList.contains("active")) || items[0]; geoSelect(input, JSON.parse(dd.dataset.results)[+sel.dataset.geoI]); }
+  else if (e.key === "Escape") { geoClose(input); }
+});
+document.addEventListener("click", (e) => {
+  if (!e.target.closest("[data-geo]") && !e.target.closest(".geo-dd")) document.querySelectorAll(".geo-dd").forEach((d) => d.remove());
 });
 
 function bodyFromBirth(b, feature) {
@@ -702,9 +775,11 @@ pages["kundali-milan"] = async (el) => {
   <div class="grid cols-2">
     <div class="card flat"><h3>${t("groom")}</h3>
       <label>${t("date")}</label><input type="date" id="m-md" value="1988-11-02"><label>${t("time")}</label><input type="time" step="1" id="m-mt" value="08:15:00">
+      <label>${t("place")}</label><div class="geo-wrap"><input data-geo data-geo-lat="m-mla" data-geo-lon="m-mlo" autocomplete="off" placeholder="${t("placePh")}"><div class="geo-hint"></div></div>
       <label>${t("lat")}</label><input type="number" step="0.0001" id="m-mla" value="26.5833"><label>${t("lon")}</label><input type="number" step="0.0001" id="m-mlo" value="85.2667"></div>
     <div class="card flat"><h3>${t("bride")}</h3>
       <label>${t("date")}</label><input type="date" id="m-fd" value="1992-03-14"><label>${t("time")}</label><input type="time" step="1" id="m-ft" value="17:40:00">
+      <label>${t("place")}</label><div class="geo-wrap"><input data-geo data-geo-lat="m-fla" data-geo-lon="m-flo" autocomplete="off" placeholder="${t("placePh")}"><div class="geo-hint"></div></div>
       <label>${t("lat")}</label><input type="number" step="0.0001" id="m-fla" value="28.4089"><label>${t("lon")}</label><input type="number" step="0.0001" id="m-flo" value="77.3178"></div>
   </div>
   <div class="formline no-print" style="margin:12px 0"><button class="btn primary" id="m-go">${t("match")}</button></div>
