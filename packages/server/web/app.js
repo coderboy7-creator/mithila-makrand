@@ -972,6 +972,7 @@ pages["validation-suite"] = async (el) => {
       <div class="card stat"><div class="v">${v.gate.drikCrossCheck.tithiIdentityMatches}</div><div class="k">${t("drikIdentity")}</div></div>
       <div class="card stat"><div class="v">±${v.gate.toleranceSeconds}s</div><div class="k">${t("tolerance")}</div></div>
       <div class="card stat"><div class="v">${v.gate.hybrid?.nakshatraIdentityMatches ?? "—"} · ${v.gate.hybrid?.tithiIdentityMatches ?? "—"}</div><div class="k">${HI() ? "हाइब्रिड आइडेंटिटी (नक्षत्र · तिथि) — निदानात्मक" : "Hybrid identities (nak · tithi) — diagnostic"}</div></div>
+      <div class="card stat"><div class="v" style="color:var(--green)">≤${v.drikCertification?.moonWorstArcsec ?? "?"}" · ≤${v.drikCertification?.sunWorstArcsec ?? "?"}"</div><div class="k">${HI() ? "दृक् प्रमाणन (चंद्र · सूर्य) बनाम PyEphem, 2016–2030" : "Drik certified (moon · sun) vs PyEphem, 2016–2030"}</div></div>
     </div>
     <div class="note">${esc(v.gate.makaranda.note)}</div>
     <div class="note green">${esc(v.gate.drikCrossCheck.note)}</div>
@@ -1005,6 +1006,12 @@ pages["validation-suite"] = async (el) => {
     <div class="note green">${HI() ? "प्रत्येक मुद्रित तिथि-अंत पर दृक् इंजन द्वारा चंद्र–सूर्य वियोग; बाह्य एफेमेरिस (PyEphem) से जाँचा गया। यह हमारे आधुनिक इंजन को प्रमाणित करता है; दिखाया गया मुद्रित-बनाम-आधुनिक अंतर पारंपरिक मॉडल का अपना अवशेष-बैंड है।" : "Moon−sun separation computed by the Drik engine at each printed tithi end, checked against an external ephemeris (PyEphem). This certifies our modern engine; the printed-vs-modern gap shown is the traditional model's own residual band."}</div>
     <table><tr><th>${HI() ? "मुद्रित तिथि-अंत (IST)" : "Printed tithi end (IST)"}</th><th>${HI() ? "संदर्भ" : "Reference"}</th><th>PyEphem °</th><th>${HI() ? "इंजन °" : "Engine °"}</th><th>Δ</th><th>${t("statusH2")}</th></tr>
     ${(v.ephemAnchors ?? []).map((a) => `<tr><td class="mono">${a.iso}</td><td style="font-size:12px">${esc(a.ref)}</td><td class="mono">${a.distDeg}</td><td class="mono">${a.engineDeg}</td><td class="mono">${a.deltaVsEphemDeg}</td><td>${a.ok ? '<span class="badge green">≤0.15°</span>' : '<span class="badge red">CHECK</span>'}</td></tr>`).join("")}</table>
+    <h3>${HI() ? "दृक् इंजन प्रमाणन ग्रिड (60 युग, 2016–2030)" : "Drik engine certification grid (60 epochs, 2016–2030)"}</h3>
+    <div class="note green">${esc((v.drikCertification?.reference ?? "") + " — " + (v.drikCertification?.grid ?? ""))}<br>${esc(v.drikCertification?.note ?? "")}</div>
+    <div class="kv mono" style="margin-top:8px">
+      <div>${HI() ? "चंद्रमा — सबसे बड़ा अवशेष" : "Moon — worst residual"}</div><div>${v.drikCertification?.moonWorstArcsec ?? "?"}" = ${v.drikCertification?.moonWorstDeg ?? "?"}° @ ${v.drikCertification?.moonWorstAt ?? ""} <span class="badge green">≤0.005° LOCKED</span></div>
+      <div>${HI() ? "सूर्य — सबसे बड़ा अवशेष" : "Sun — worst residual"}</div><div>${v.drikCertification?.sunWorstArcsec ?? "?"}" = ${v.drikCertification?.sunWorstDeg ?? "?"}° @ ${v.drikCertification?.sunWorstAt ?? ""} <span class="badge green">≤0.012° LOCKED</span></div>
+    </div>
     <h3>${HI() ? "PROVISIONAL फ़ोटो निष्कर्षण (स्वामी पुष्टि की प्रतीक्षा)" : "PROVISIONAL photo extractions (awaiting owner confirmation)"}</h3>
     <table><tr><th>${t("date")}</th><th>${HI() ? "स्रोत" : "Source"}</th><th>${HI() ? "नए पढ़े क्षेत्र" : "Newly read fields"}</th><th>${t("statusH2")}</th></tr>
     ${(v.photoProvisional ?? []).map((p) => `<tr><td class="mono">${p.date}</td><td style="font-size:12px">${esc(p.source)}</td><td class="mono" style="font-size:11.5px">${esc(Object.entries(p.fields).map(([k, x]) => `${k}=${x}`).join(" · "))}</td><td><span class="badge amber">PROVISIONAL</span></td></tr>`).join("")}</table>

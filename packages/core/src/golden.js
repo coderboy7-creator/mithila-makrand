@@ -12,6 +12,7 @@
 import { parseDandaPala, parseSourceClock, formatDuration } from "./traditionalTime.js";
 import { jdFromDate, jdToISO, pad2, dateFromJD, norm360 } from "./base.js";
 import { drikMoonLongitude, drikSunLongitude } from "./ephemeris.js";
+import { DRIK_CERT_ANCHORS } from "./drikCert.js";
 import { createContext } from "./profiles.js";
 import { calculatePanchang } from "./panchang.js";
 
@@ -225,9 +226,32 @@ export function runGoldenSuite() {
     return { ...a, engineDeg: +engine.toFixed(2), deltaVsEphemDeg: +(engine - a.distDeg).toFixed(2), ok: Math.abs(engine - a.distDeg) <= 0.15 };
   });
 
+  // Drik certification grid: 60 epochs 2016–2030 vs PyEphem 4.2.1 (apparent
+  // geocentric ecliptic longitudes, equinox of date). Upgraded 2026-09-20:
+  // full Meeus ch.47 lunar series + IAU-1980 nutation + Espenak–Meeus ΔT.
+  const drikCertification = (() => {
+    let worstMoon = 0, worstSun = 0, worstMoonAt = "", worstSunAt = "";
+    for (const a of DRIK_CERT_ANCHORS) {
+      const [d, t] = a.iso.split("T"); const [y, m, dd] = d.split("-").map(Number);
+      const jd = jdFromDate(y, m, dd, +t.slice(0, 2));
+      const dm = Math.abs(((drikMoonLongitude(jd) - a.moon + 540) % 360) - 180);
+      const ds = Math.abs(((drikSunLongitude(jd) - a.sun + 540) % 360) - 180);
+      if (dm > worstMoon) { worstMoon = dm; worstMoonAt = a.iso; }
+      if (ds > worstSun) { worstSun = ds; worstSunAt = a.iso; }
+    }
+    return {
+      reference: "PyEphem 4.2.1 (independent ephemeris), apparent geocentric place, equinox of date",
+      grid: "2016–2030, 60 epochs",
+      moonWorstDeg: +worstMoon.toFixed(6), moonWorstArcsec: +(worstMoon * 3600).toFixed(1), moonWorstAt: worstMoonAt,
+      sunWorstDeg: +worstSun.toFixed(6), sunWorstArcsec: +(worstSun * 3600).toFixed(1), sunWorstAt: worstSunAt,
+      note: "Moon: full Meeus ch.47 series (60 periodic terms) + complete IAU-1980 nutation + ΔT — locked ≤0.005°. Sun: Meeus ch.25 + apparent corrections — locked ≤0.012°; residual is inherent to the ch.25 truncation (Table 25.C upgrade path documented in MAKARANDA_ENGINE_PLAN.md).",
+    };
+  })();
+
   return {
     rows: rowResults, gate,
     ephemAnchors,
+    drikCertification,
     photoProvisional: PHOTO_PROVISIONAL,
     policy: { dandaPalInterpretation: "END_TIME relative to Panchang-day sunrise", sourcePreservation: "EXACT — anomalies flagged, never corrected", tolerance: "±60s for minute-precision sources" },
   };

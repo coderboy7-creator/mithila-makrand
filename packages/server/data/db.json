@@ -110,6 +110,22 @@
   "saved_kundalis": [],
   "audit_logs": [
     {
+      "ts": "2026-09-20T07:06:36.761Z",
+      "endpoint": "/api/v1/panchang/calculate",
+      "calculationMode": "drik-v1",
+      "profileVersion": null,
+      "date": "2022-08-04",
+      "locationSource": "USER_PROVIDED"
+    },
+    {
+      "ts": "2026-09-20T07:06:20.384Z",
+      "endpoint": "/api/v1/panchang/calculate",
+      "calculationMode": "drik-v1",
+      "profileVersion": null,
+      "date": "2022-08-04",
+      "locationSource": "DEFAULT"
+    },
+    {
       "ts": "2026-09-19T20:15:50.902Z",
       "endpoint": "/api/v1/panchang/calculate",
       "calculationMode": "makaranda-v2-hybrid",

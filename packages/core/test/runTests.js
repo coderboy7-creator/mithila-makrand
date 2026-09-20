@@ -10,6 +10,7 @@
 import { parseDandaPala, parseSourceClock, formatDuration } from "../src/traditionalTime.js";
 import { jdFromDate, dateFromJD, norm360, jdToISO } from "../src/base.js";
 import { GOLDEN_ROWS, DERIVED_NORMALIZATION, formulaDerivedInstant, runGoldenSuite, EPHEM_ANCHORS, PHOTO_PROVISIONAL } from "../src/golden.js";
+import { DRIK_CERT_ANCHORS } from "../src/drikCert.js";
 import { createContext, methodBanner } from "../src/profiles.js";
 import { calculatePanchang, tithiAt, nakshatraAt } from "../src/panchang.js";
 import { calculateKundali, calculateVarga } from "../src/chart.js";
@@ -263,6 +264,23 @@ for (const a of EPHEM_ANCHORS) {
     const jd = isoToJD(a.iso);
     const dist = norm360(drikMoonLongitude(jd) - drikSunLongitude(jd));
     approx(dist, a.distDeg, 0.15, a.ref);
+  });
+}
+
+console.log("\n[DrikCertification — 60-anchor lock vs PyEphem 4.2.1 (2016–2030)]");
+{
+  let wm = 0, ws = 0;
+  for (const a of DRIK_CERT_ANCHORS) {
+    const [d, t] = a.iso.split("T"); const [y, m, dd] = d.split("-").map(Number);
+    const jd = jdFromDate(y, m, dd, +t.slice(0, 2));
+    wm = Math.max(wm, Math.abs(((drikMoonLongitude(jd) - a.moon + 540) % 360) - 180));
+    ws = Math.max(ws, Math.abs(((drikSunLongitude(jd) - a.sun + 540) % 360) - 180));
+  }
+  test(`Drik moon within 0.005° of PyEphem at all ${DRIK_CERT_ANCHORS.length} cert epochs (worst ${(wm * 3600).toFixed(1)}")`, () => {
+    if (wm > 0.005) throw new Error(`worst moon residual ${wm.toFixed(6)}° > 0.005°`);
+  });
+  test(`Drik sun within 0.012° of PyEphem at all ${DRIK_CERT_ANCHORS.length} cert epochs (worst ${(ws * 3600).toFixed(1)}")`, () => {
+    if (ws > 0.012) throw new Error(`worst sun residual ${ws.toFixed(6)}° > 0.012°`);
   });
 }
 

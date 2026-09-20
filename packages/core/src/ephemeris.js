@@ -12,11 +12,17 @@
  *       documented radius ratios (SS sighra constants themselves UNVERIFIED).
  *     - Anything not verified is flagged, never invented (spec §2.2).
  *
- *  2) DRIK engine: modern analytical astronomy.
- *     - Sun: Meeus full low-precision series (~0.01°).
- *     - Moon: truncated ELP main terms (~0.01°).
- *     - Planets: JPL Keplerian elements 1800–2050 + light-time iteration.
+ *  2) DRIK engine: modern analytical astronomy (upgraded 2026-09-20).
+ *     - Sun: Meeus ch.25 series + apparent corrections (nutation + aberration).
+ *     - Moon: FULL Meeus ch.47 series (all 60 Table-47.A periodic terms,
+ *       cross-verified against astropy's transcription, mismatches = 0)
+ *       + additive terms + nutation. ~10" class (Meeus's own claim).
+ *     - Nutation: complete IAU-1980 series (63 Δψ + 38 Δε terms).
+ *     - ΔT: Espenak–Meeus polynomials; luminaries evaluated at TT.
+ *     - Planets: JPL Keplerian elements 1800–2050 + light-time iteration
+ *       (arcminute class; adequate for graha placements, not for Panchang).
  *     - Mean lunar node for Rahu/Ketu.
+ *     - Certified against PyEphem 4.2.1 (see DRIK_CERT_ANCHORS in golden.js).
  *     - Swiss Ephemeris adapter slot reserved (spec §24).
  *
  * Neither engine may read runtime state from the other. Anchoring constants
@@ -24,6 +30,7 @@
  */
 
 import { norm360, sinD, cosD, asinD, atan2D } from "./base.js";
+import { NUTATION_IAU1980_PSI, NUTATION_IAU1980_EPS, MOON_TERMS_L } from "./meeusTables.js";
 
 export const KALI_EPOCH_JD = 588465.5; // traditional Kali-ahargana epoch (audit reference)
 export const SS_YUGA_CIVIL_DAYS = 1577917828;
@@ -199,57 +206,94 @@ export function ssIsRetrograde(name, jd) {
 /* DRIK engine — modern analytical astronomy                           */
 /* ================================================================== */
 
+/* ---- Delta T: Espenak & Meeus (2006) polynomials ---- */
+export function deltaTSec(jdUT) {
+  const y = 2000 + (jdUT - J2000) / 365.25;
+  if (y >= 2005 && y < 2050) { const t = y - 2000; return 62.92 + 0.32217 * t + 0.005589 * t * t; }
+  if (y >= 1986 && y < 2005) { const t = y - 2000; return 63.86 + 0.3345 * t - 0.060374 * t * t + 0.0017275 * t ** 3 + 0.000651814 * t ** 4 + 0.00002373599 * t ** 5; }
+  if (y >= 1961 && y < 1986) { const t = y - 1975; return 45.45 + 1.067 * t - (t * t) / 260 - (t ** 3) / 718; }
+  if (y >= 2050) { const t = y - 2000; return 62.92 + 0.32217 * t + 0.005589 * t * t; } // extrapolated, flagged
+  const t = y - 1975; return 45.45 + 1.067 * t; // pre-1961 coarse fallback (unused by Panchang features)
+}
+
+/* ---- Nutation: complete IAU-1980 (Meeus Table 22.A), full series ---- */
+export function nutationFull(jdTT) {
+  const T = (jdTT - J2000) / 36525;
+  const D = norm360(297.85036 + 445267.111480 * T - 0.0019142 * T * T + T ** 3 / 189474);
+  const M = norm360(357.52772 + 35999.050340 * T - 0.0001603 * T * T - T ** 3 / 300000);
+  const Mp = norm360(134.96298 + 477198.867398 * T + 0.0086972 * T * T + T ** 3 / 56250);
+  const F = norm360(93.27191 + 483202.017538 * T - 0.0036825 * T * T + T ** 3 / 327270);
+  const Om = norm360(125.04452 - 1934.136261 * T + 0.0020708 * T * T + T ** 3 / 450000);
+  let dPsi = 0, dEps = 0;
+  for (const [d, m, mp, f, om, a, b] of NUTATION_IAU1980_PSI) dPsi += (a + b * T) * sinD(d * D + m * M + mp * Mp + f * F + om * Om);
+  for (const [d, m, mp, f, om, a, b] of NUTATION_IAU1980_EPS) dEps += (a + b * T) * cosD(d * D + m * M + mp * Mp + f * F + om * Om);
+  dPsi /= 36000000; dEps /= 36000000; // units of 0.0001 arcsec -> degrees
+  const U = T / 100; // Meeus eq. 22.3 (10000-yr validity)
+  const eps0 = 23 + 26 / 60 + 21.448 / 3600 +
+    (-4680.93 * U - 1.55 * U ** 2 + 1999.25 * U ** 3 - 51.38 * U ** 4 - 249.67 * U ** 5 -
+     39.05 * U ** 6 + 7.12 * U ** 7 + 27.87 * U ** 8 + 5.79 * U ** 9 + 2.45 * U ** 10) / 3600;
+  return { dPsi, dEps, eps0, eps: eps0 + dEps };
+}
+
+/** Legacy single-term nutation in longitude (kept for arcminute-class planets). */
 function nutationDeg(jd) {
   const T = (jd - J2000) / 36525;
   const omega = norm360(125.04452 - 1934.136261 * T);
   return (-17.2 / 3600) * sinD(omega);
 }
 
-/** Sun: Meeus ch. 25 series, ~0.01°. */
-export function drikSunLongitude(jd) {
-  const T = (jd - J2000) / 36525;
+/** Sun APPARENT geocentric longitude: Meeus ch.25 series evaluated at TT,
+ *  + nutation in longitude (full IAU-1980) + aberration (Meeus 25.10). */
+export function drikSunLongitude(jdUT) {
+  const jdTT = jdUT + deltaTSec(jdUT) / 86400;
+  const T = (jdTT - J2000) / 36525;
   const L0 = norm360(280.46646 + 36000.76983 * T + 0.0003032 * T * T);
   const M = norm360(357.52911 + 35999.05029 * T - 0.0001537 * T * T);
   const C =
     (1.914602 - 0.004817 * T - 0.000014 * T * T) * sinD(M) +
     (0.019993 - 0.000101 * T) * sinD(2 * M) +
     0.000289 * sinD(3 * M);
-  return norm360(L0 + C + nutationDeg(jd));
+  const lonTrue = norm360(L0 + C);
+  const e = 0.016708634 - 0.000042037 * T - 0.0000001267 * T * T;
+  const R = 1.000001018 * (1 - e * e) / (1 + e * cosD(M + C));
+  const { dPsi } = nutationFull(jdTT);
+  return norm360(lonTrue + dPsi - 20.4898 / (3600 * R));
 }
 
-export function drikSunRA(jd, obliquity = 23.4392911) {
+export function drikSunRA(jd, obliquity = null) {
   const lam = drikSunLongitude(jd);
-  const ra = atan2D(cosD(obliquity) * sinD(lam), cosD(lam));
-  const dec = asinD(sinD(obliquity) * sinD(lam));
+  const jdTT = jd + deltaTSec(jd) / 86400;
+  const T = (jdTT - J2000) / 36525;
+  const nut = nutationFull(jdTT);
+  // apparent obliquity incl. the 0.00256° cos Ω correction (Meeus ch.25)
+  const epsApp = (obliquity ?? nut.eps) + 0.00256 * cosD(norm360(125.04452 - 1934.136261 * T));
+  const ra = atan2D(cosD(epsApp) * sinD(lam), cosD(lam));
+  const dec = asinD(sinD(epsApp) * sinD(lam));
   return { lon: lam, ra, dec };
 }
 
-/** Moon: truncated ELP-2000 main terms (Meeus ch. 47). */
-export function drikMoonLongitude(jd) {
-  const T = (jd - J2000) / 36525;
-  const Lp = norm360(218.3164477 + 481267.88123421 * T - 0.0015786 * T * T);
-  const D = norm360(297.8501921 + 445267.1114034 * T - 0.0018819 * T * T);
-  const M = norm360(357.5291092 + 35999.0502909 * T - 0.0001536 * T * T);
-  const Mp = norm360(134.9633964 + 477198.8675055 * T + 0.0087414 * T * T);
-  const F = norm360(93.272095 + 483202.0175233 * T - 0.0036539 * T * T);
-
-  const terms = [
-    [0, 0, 1, 0, 6288774], [2, 0, -1, 0, 1274027], [2, 0, 0, 0, 658314],
-    [0, 0, 2, 0, 213618], [0, 1, 0, 0, -185116], [0, 0, 0, 2, -114332],
-    [2, 0, -2, 0, 58793], [2, -1, -1, 0, 57066], [2, 0, 1, 0, 53322],
-    [2, -1, 0, 0, 45758], [0, 1, -1, 0, -40923], [1, 0, 0, 0, -34720],
-    [0, 1, 1, 0, -30383], [2, 0, 0, -2, 15327], [0, 0, 1, 2, -12528],
-    [0, 0, 1, -2, 10980], [4, 0, -1, 0, 10675], [0, 0, 3, 0, 10034],
-    [4, 0, -2, 0, 8548], [2, 1, -1, 0, -7888], [2, 1, 0, 0, -6766],
-    [1, 0, -1, 0, 5163], [1, 1, 0, 0, 4987], [2, -1, 1, 0, 4036],
-  ];
-  let lon = 0;
-  for (const [d, m, mp, f, c] of terms) {
-    lon += c * sinD(d * D + m * M + mp * Mp + f * F);
+/** Moon APPARENT geocentric longitude: complete Meeus ch.47 series at TT.
+ *  All 60 Table-47.A periodic terms (59 nonzero Σl + the additive terms),
+ *  E-factors per eq. 47.6, nutation applied. Accuracy class ~10" (Meeus). */
+export function drikMoonLongitude(jdUT) {
+  const jdTT = jdUT + deltaTSec(jdUT) / 86400;
+  const T = (jdTT - J2000) / 36525;
+  const Lp = norm360(218.3164477 + 481267.88123421 * T - 0.0015786 * T * T + T ** 3 / 538841 - T ** 4 / 65194000);
+  const D = norm360(297.8501921 + 445267.1114034 * T - 0.0018819 * T * T + T ** 3 / 545868 - T ** 4 / 113065000);
+  const M = norm360(357.5291092 + 35999.0502909 * T - 0.0001536 * T * T + T ** 3 / 24490000);
+  const Mp = norm360(134.9633964 + 477198.8675055 * T + 0.0087414 * T * T + T ** 3 / 69699 - T ** 4 / 14712000);
+  const F = norm360(93.2720950 + 483202.0175233 * T - 0.0036539 * T * T - T ** 3 / 3526000 + T ** 4 / 863310000);
+  const A1 = norm360(119.75 + 131.849 * T);   // Venus action
+  const A2 = norm360(53.09 + 479264.290 * T); // Jupiter action
+  const E = 1 - 0.002516 * T - 0.0000074 * T * T;
+  let sumL = 0;
+  for (const [d, m, mp, f, _om, c, ep] of MOON_TERMS_L) {
+    const eFac = ep === 1 ? E : ep === 2 ? E * E : 1;
+    sumL += c * eFac * sinD(d * D + m * M + mp * Mp + f * F);
   }
-  const omega = norm360(125.04452 - 1934.136261 * T);
-  lon += 3958 * sinD(omega) + 1962 * sinD(Lp - F) + 318 * sinD(Lp);
-  return norm360(Lp + lon / 1e6);
+  sumL += 3958 * sinD(A1) + 1962 * sinD(Lp - F) + 318 * sinD(A2);
+  const { dPsi } = nutationFull(jdTT);
+  return norm360(Lp + sumL / 1e6 + dPsi);
 }
 
 /* JPL approximate Keplerian elements (valid 1800–2050), degrees & AU. */
