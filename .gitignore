@@ -6,3 +6,5 @@ data/*.db
 *.sqlite
 .DS_Store
 __pycache__/
+target/
+*.class
