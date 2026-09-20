@@ -220,7 +220,7 @@ function renderChrome() {
   $$("#nav a").forEach((a) => (a.onclick = () => { location.hash = "#/" + a.dataset.route; }));
   $("#global-method-label").textContent = profileLabel(state.globalProfile);
   $("#profile-chip").textContent = `${t("profile")}: ${state.globalProfile}`;
-  $("#ayanamsa-chip").textContent = `${t("ayanamsa")}: ${mak ? "Makaranda" : "Lahiri"}`;
+  $("#ayanamsa-chip").textContent = `${t("ayanamsa")}: ${state.globalProfile === "drik-v1" ? "Lahiri" : state.globalProfile === "makaranda-v2-hybrid" ? "Makaranda (hybrid fit)" : "Makaranda"}`;
   $("#brand-sub").textContent = t("brandSub");
   $("#side-note").textContent = t("sideNote");
   $("#lang-btn").textContent = t("langBtn");
@@ -250,15 +250,20 @@ function openMethodModal() {
       <span class="faint">Mithila Vishwavidyalaya Panchang · Makarandaanushar · Surya Siddhanta tradition · makaranda-v1</span></div>
     </label>
     <label class="card flat check-card">
-      <input type="radio" name="gm" value="drik-v1" ${!mak ? "checked" : ""}>
+      <input type="radio" name="gm" value="drik-v1" ${state.globalProfile === "drik-v1" ? "checked" : ""}>
       <div><b>${t("drikName")}</b><br>
-      <span class="faint">${HI() ? "बिल्ट-इन विश्लेषिक एफेमेरिस (Swiss Ephemeris एडाप्टर आरक्षित) · विन्यासयोग्य अयनांश" : "Built-in analytical ephemeris (Swiss Ephemeris adapter reserved) · configurable ayanamsa"}</span></div>
+      <span class="faint">${HI() ? "बिल्ट-इन विश्लेषिक एफेमेरिस — पूर्ण मीयस शृंखला, PyEphem-प्रमाणित (चंद्र ≤7.3″) · विन्यासयोग्य अयनांश" : "Built-in analytical ephemeris — full Meeus series, PyEphem-certified (moon ≤7.3″) · configurable ayanamsa"}</span></div>
+    </label>
+    <label class="card flat check-card">
+      <input type="radio" name="gm" value="makaranda-v2-hybrid" ${state.globalProfile === "makaranda-v2-hybrid" ? "checked" : ""}>
+      <div><b>${t("hybridName")}</b> <span class="badge amber">UNVERIFIED_HYBRID</span><br>
+      <span class="faint">${HI() ? "प्रायोगिक सेतु इंजन — आधुनिक-आधारित माध्य + शास्त्रीय विक्षोभ शृंखला; सारणी आने तक" : "Experimental bridge engine — modern-anchored means + classical perturbation series; until worksheets arrive"}</span></div>
     </label>
   </div>
   <h3>${HI() ? "उन्नत" : "Advanced"}</h3>
   <div class="kv mono">
     <div>${HI() ? "पंचांग प्रोफ़ाइल" : "Panchang Profile"}</div><div>Mithila Vishwavidyalaya</div>
-    <div>${t("ayanamsa")}</div><div>${mak ? "Makaranda (calibrated anchor, UNVERIFIED)" : "Lahiri / Raman / KP / Yukteshwar / Fagan"}</div>
+    <div>${t("ayanamsa")}</div><div>${state.globalProfile === "drik-v1" ? "Lahiri / Raman / KP / Yukteshwar / Fagan" : state.globalProfile === "makaranda-v2-hybrid" ? "Makaranda (calibrated anchor + hybrid fit, UNVERIFIED_HYBRID)" : "Makaranda (calibrated anchor, UNVERIFIED)"}</div>
     <div>${HI() ? "अक्षांश" : "Akshansh"}</div><div>26°35′ N</div>
     <div>${HI() ? "देशांतर (मुद्रित)" : "Deshantar (printed)"}</div><div>01|35 — UNVERIFIED</div>
     <div>${HI() ? "पलभा" : "Palbha"}</div><div>06</div>
