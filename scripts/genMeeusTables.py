@@ -7,7 +7,7 @@ Sources (fetched 2026-09-20):
 - Lunar longitude periodic terms (Meeus Table 47.A, all 60): moonSumL
 Deterministic mechanical conversion — no hand retyping.
 """
-import re, json, io, sys
+import re, json, io, sys, os
 
 DELTA_PSI = r"""
 + (-171996 + -174.2 T) sin[ + Omega] + (-13187 + -1.6 T) sin[ -2 D + 2 F + 2 Omega] + (-2274 + -0.2 T) sin[ + 2 F + 2 Omega] + (2062 + 0.2 T) sin[ + 2 Omega] + (1426 + -3.4 T) sin[ + M] + (712 + 0.1 T) sin[ + MP] + (-517 + 1.2 T) sin[ -2 D + M + 2 F + 2 Omega] + (-386 + -0.4 T) sin[ + 2 F + Omega] + (-301) sin[ + MP + 2 F + 2 Omega] + (217 + -0.5 T) sin[ -2 D -1 M + 2 F + 2 Omega] + (-158) sin[ -2 D + MP] + (129 + 0.1 T) sin[ -2 D + 2 F + Omega] + (123) sin[ -1 MP + 2 F + 2 Omega] + (63) sin[ + 2 D] + (63 + 0.1 T) sin[ + MP + Omega] + (-59) sin[ + 2 D -1 MP + 2 F + 2 Omega] + (-58 + -0.1 T) sin[ -1 MP + Omega] + (-51) sin[ + MP + 2 F + Omega] + (48) sin[ -2 D + 2 MP] + (46) sin[ -2 MP + 2 F + Omega] + (-38) sin[ + 2 D + 2 F + 2 Omega] + (-31) sin[ + 2 MP + 2 F + 2 Omega] + (29) sin[ + 2 MP] + (29) sin[ -2 D + MP + 2 F + 2 Omega] + (26) sin[ + 2 F] + (-22) sin[ -2 D + 2 F] + (21) sin[ -1 MP + 2 F + Omega] + (17 + -0.1 T) sin[ + 2 M] + (16) sin[ + 2 D -1 MP + Omega] + (-16 + 0.1 T) sin[ -2 D + 2 M + 2 F + 2 Omega] + (-15) sin[ + M + Omega] + (-13) sin[ -2 D + MP + Omega] + (-12) sin[ -1 M + Omega] + (11) sin[ + 2 MP -2 F] + (-10) sin[ + 2 D -1 MP + 2 F + Omega] + (-8) sin[ + 2 D + MP + 2 F + 2 Omega] + (7) sin[ + M + 2 F + 2 Omega] + (-7) sin[ -2 D + M + MP] + (-7) sin[ -1 M + 2 F + 2 Omega] + (-8) sin[ + 2 D + 2 F + Omega] + (6) sin[ + 2 D + MP] + (6) sin[ -2 D + 2 MP + 2 F + 2 Omega] + (6) sin[ -2 D + MP + 2 F + Omega] + (-6) sin[ + 2 D -2 MP + Omega] + (-6) sin[ + 2 D + Omega] + (5) sin[ -1 M + MP] + (-5) sin[ -2 D -1 M + 2 F + Omega] + (-5) sin[ -2 D + Omega] + (-5) sin[ + 2 MP + 2 F + Omega] + (4) sin[ -2 D + 2 MP + Omega] + (4) sin[ -2 D + M + 2 F + Omega] + (4) sin[ + MP -2 F] + (-4) sin[ -1 D + MP] + (-4) sin[ -2 D + M] + (-4) sin[ + D] + (3) sin[ + MP + 2 F] + (-3) sin[ -2 MP + 2 F + 2 Omega] + (-3) sin[ -1 D -1 M + MP] + (-3) sin[ + M + MP] + (-3) sin[ -1 M + MP + 2 F + 2 Omega] + (-3) sin[ + 2 D -1 M -1 MP + 2 F + 2 Omega] + (-3) sin[ + 3 MP + 2 F + 2 Omega] + (-3) sin[ + 2 D -1 M + 2 F + 2 Omega]
@@ -63,6 +63,32 @@ assert ml[1] == [2, 0, -1, 0, 0, 1274027, 0, "sin"]
 assert ml[-1] == [2, 0, 3, 0, 0, 294, 0, "sin"]
 assert all(r[7] == "sin" for r in ml)
 
+# --- Lunar latitude (Table 47.B) and distance (Table 47.A r-column) terms ---
+# Source: astropy v4.0 coordinates/orbital_elements.py (checked-in copy), a
+# transcription of Meeus Tables 47.A/47.B. Rows: (D, M, M', F, factor),
+# distance rows carry (D, M, M', F, l-factor, r-factor). E^|M| correction.
+ASTROPY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "astropy_orbital_elements_v4.0.py")
+_src = open(ASTROPY).read()
+_lr_block = re.search(r"_MOON_L_R = \((.*?)^\)", _src, re.S | re.M).group(1)
+_b_block = re.search(r"_MOON_B = \((.*?)^\)", _src, re.S | re.M).group(1)
+lr_rows = [(int(a), int(b), int(c), int(d), int(l), int(r)) for a, b, c, d, l, r in
+           re.findall(r"\((-?\d+), (-?\d+), (-?\d+), (-?\d+), (-?\d+), (-?\d+)\)", _lr_block)]
+b_rows = [(int(a), int(b), int(c), int(d), int(x)) for a, b, c, d, x in
+          re.findall(r"\((-?\d+), (-?\d+), (-?\d+), (-?\d+), (-?\d+)\)", _b_block)]
+assert len(lr_rows) == 60 and len(b_rows) == 60, "Meeus Table 47.A/B each have 60 rows"
+assert lr_rows[0] == (0, 0, 1, 0, 6288774, -20905355) and lr_rows[1] == (2, 0, -1, 0, 1274027, -3699111)
+assert b_rows[0] == (0, 0, 0, 1, 5128122) and b_rows[1] == (0, 0, 1, 1, 280602)
+# cross-check the astropy L-column against the Frink-derived MOON_TERMS_L
+for i, (D, M, Mp, F, lf, _rf) in enumerate(lr_rows):
+    if i < len(ml):
+        fr = ml[i]
+        assert [D, M, Mp, F] == fr[:4] and lf == fr[5], f"mismatch row {i}: {D},{M},{Mp},{F},{lf} vs {fr}"
+    else:
+        assert lf == 0, "60th row has l=0 (lives in the distance series only)"
+mr = [[D, M, Mp, F, 0, r, min(abs(M), 2), "cos"] for D, M, Mp, F, _l, r in lr_rows if r != 0]
+mb = [[D, M, Mp, F, 0, x, min(abs(M), 2), "sin"] for D, M, Mp, F, x in b_rows if x != 0]
+print(f"moon R terms: {len(mr)}, moon B terms: {len(mb)}", file=sys.stderr)
+
 def js(rows, withB):
     out = []
     for r in rows:
@@ -78,3 +104,7 @@ print("export const NUTATION_IAU1980_PSI = [\n  " + js(psi, True) + "\n];")
 print("export const NUTATION_IAU1980_EPS = [\n  " + js(eps, True) + "\n];")
 print("/* [D, M, M', F, Omega, coeff(1e-6 deg), E-power] — Meeus Table 47.A */")
 print("export const MOON_TERMS_L = [\n  " + js(ml, False) + "\n];")
+print("/* [D, M, M', F, Omega, coeff(1e-6 deg), E-power] — Meeus Table 47.A Σr (cos), Δ in km = coeff/1000 */")
+print("export const MOON_TERMS_R = [\n  " + js(mr, False) + "\n];")
+print("/* [D, M, M', F, Omega, coeff(1e-6 deg), E-power] — Meeus Table 47.B Σb (sin) */")
+print("export const MOON_TERMS_B = [\n  " + js(mb, False) + "\n];")

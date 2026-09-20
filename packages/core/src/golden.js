@@ -11,8 +11,10 @@
 
 import { parseDandaPala, parseSourceClock, formatDuration } from "./traditionalTime.js";
 import { jdFromDate, jdToISO, pad2, dateFromJD, norm360 } from "./base.js";
-import { drikMoonLongitude, drikSunLongitude } from "./ephemeris.js";
+import { drikMoonLongitude, drikSunLongitude, drikMoonState, drikPlanetApparent, drikTrueNode } from "./ephemeris.js";
 import { DRIK_CERT_ANCHORS } from "./drikCert.js";
+import { PLANET_CERT_ANCHORS } from "./planetCert.js";
+import { RAHU_CERT_ANCHORS } from "./rahuCert.js";
 import { createContext } from "./profiles.js";
 import { calculatePanchang } from "./panchang.js";
 
@@ -231,20 +233,55 @@ export function runGoldenSuite() {
   // full Meeus ch.47 lunar series + IAU-1980 nutation + Espenak–Meeus ΔT.
   const drikCertification = (() => {
     let worstMoon = 0, worstSun = 0, worstMoonAt = "", worstSunAt = "";
+    let worstMoonBet = 0, worstMoonBetAt = "";
     for (const a of DRIK_CERT_ANCHORS) {
       const [d, t] = a.iso.split("T"); const [y, m, dd] = d.split("-").map(Number);
       const jd = jdFromDate(y, m, dd, +t.slice(0, 2));
-      const dm = Math.abs(((drikMoonLongitude(jd) - a.moon + 540) % 360) - 180);
+      const st = drikMoonState(jd);
+      const dm = Math.abs(((st.lam - a.moon + 540) % 360) - 180);
       const ds = Math.abs(((drikSunLongitude(jd) - a.sun + 540) % 360) - 180);
+      const db = a.moonBet != null ? Math.abs(st.bet - a.moonBet) : 0;
       if (dm > worstMoon) { worstMoon = dm; worstMoonAt = a.iso; }
       if (ds > worstSun) { worstSun = ds; worstSunAt = a.iso; }
+      if (db > worstMoonBet) { worstMoonBet = db; worstMoonBetAt = a.iso; }
+    }
+    // Planets (VSOP87D) — longitude & latitude, apparent ecliptic of date
+    let worstPLon = 0, worstPLat = 0, worstPLonAt = "", worstPLatAt = "";
+    const perPlanet = {};
+    for (const a of PLANET_CERT_ANCHORS) {
+      const [d, t] = a.iso.split("T"); const [y, m, dd] = d.split("-").map(Number);
+      const jd = jdFromDate(y, m, dd, +t.slice(0, 2));
+      for (const p of ["Mercury", "Venus", "Mars", "Jupiter", "Saturn"]) {
+        const got = drikPlanetApparent(p, jd);
+        const ref = a[p.toLowerCase()];
+        const dl = Math.abs(((got.lam - ref.lam + 540) % 360) - 180);
+        const db = Math.abs(got.bet - ref.bet);
+        perPlanet[p] ??= { lonArcsec: 0, latArcsec: 0 };
+        perPlanet[p].lonArcsec = Math.max(perPlanet[p].lonArcsec, +(dl * 3600).toFixed(2));
+        perPlanet[p].latArcsec = Math.max(perPlanet[p].latArcsec, +(db * 3600).toFixed(2));
+        if (dl > worstPLon) { worstPLon = dl; worstPLonAt = `${p} ${a.iso}`; }
+        if (db > worstPLat) { worstPLat = db; worstPLatAt = `${p} ${a.iso}`; }
+      }
+    }
+    // True Rahu — osculating lunar node vs PyEphem osculating-plane reference
+    let worstRahu = 0, worstRahuAt = "";
+    for (const a of RAHU_CERT_ANCHORS) {
+      const [d, t] = a.iso.split("T"); const [y, m, dd] = d.split("-").map(Number);
+      const jd = jdFromDate(y, m, dd, +t.slice(0, 2));
+      const dr = Math.abs(((drikTrueNode(jd) - a.rahu + 540) % 360) - 180);
+      if (dr > worstRahu) { worstRahu = dr; worstRahuAt = a.iso; }
     }
     return {
-      reference: "PyEphem 4.2.1 (independent ephemeris), apparent geocentric place, equinox of date",
-      grid: "2016–2030, 60 epochs",
+      reference: "PyEphem 4.2.1 (independent ephemeris), apparent geocentric place, true ecliptic of date",
+      grid: "2016–2030, 60 epochs (planets: 5×60 anchors; Rahu: 28 epochs 2017–2030)",
       moonWorstDeg: +worstMoon.toFixed(6), moonWorstArcsec: +(worstMoon * 3600).toFixed(1), moonWorstAt: worstMoonAt,
       sunWorstDeg: +worstSun.toFixed(6), sunWorstArcsec: +(worstSun * 3600).toFixed(1), sunWorstAt: worstSunAt,
-      note: "Moon: full Meeus ch.47 series (60 periodic terms) + complete IAU-1980 nutation + ΔT — locked ≤0.005°. Sun: Meeus ch.25 + apparent corrections — locked ≤0.012°; residual is inherent to the ch.25 truncation (Table 25.C upgrade path documented in MAKARANDA_ENGINE_PLAN.md).",
+      moonBetaWorstArcsec: +(worstMoonBet * 3600).toFixed(1), moonBetaWorstAt: worstMoonBetAt,
+      planetLonWorstArcsec: +(worstPLon * 3600).toFixed(2), planetLonWorstAt: worstPLonAt,
+      planetLatWorstArcsec: +(worstPLat * 3600).toFixed(1), planetLatWorstAt: worstPLatAt,
+      planetPerBody: perPlanet,
+      rahuWorstArcsec: +(worstRahu * 3600).toFixed(1), rahuWorstAt: worstRahuAt,
+      note: "Moon: full Meeus ch.47 (λ,β,Δ) + IAU-1980 nutation + ΔT — λ locked ≤0.005°, β ≤0.005° (β theory floor ~9\", Meeus 47.B truncation). Sun: Meeus ch.25 — locked ≤0.012° (ch.25 truncation inherent). Planets: FULL VSOP87D + light-time + aberration + nutation — λ locked ≤0.001°, β ≤0.005° (β limited by apparent-frame recipe convention ~10\"). Rahu: true osculating node — locked ≤0.05°; residual is the lunar β-series floor (≤9\") amplified ~9× by the node-plane geometry; never changes Rahu's rashi (2′ vs 30°) or nakshatra (2′ vs 13°20′).",
     };
   })();
 

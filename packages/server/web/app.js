@@ -977,7 +977,7 @@ pages["validation-suite"] = async (el) => {
       <div class="card stat"><div class="v">${v.gate.drikCrossCheck.tithiIdentityMatches}</div><div class="k">${t("drikIdentity")}</div></div>
       <div class="card stat"><div class="v">±${v.gate.toleranceSeconds}s</div><div class="k">${t("tolerance")}</div></div>
       <div class="card stat"><div class="v">${v.gate.hybrid?.nakshatraIdentityMatches ?? "—"} · ${v.gate.hybrid?.tithiIdentityMatches ?? "—"}</div><div class="k">${HI() ? "हाइब्रिड आइडेंटिटी (नक्षत्र · तिथि) — निदानात्मक" : "Hybrid identities (nak · tithi) — diagnostic"}</div></div>
-      <div class="card stat"><div class="v" style="color:var(--green)">≤${v.drikCertification?.moonWorstArcsec ?? "?"}" · ≤${v.drikCertification?.sunWorstArcsec ?? "?"}"</div><div class="k">${HI() ? "दृक् प्रमाणन (चंद्र · सूर्य) बनाम PyEphem, 2016–2030" : "Drik certified (moon · sun) vs PyEphem, 2016–2030"}</div></div>
+      <div class="card stat"><div class="v" style="color:var(--green)">≤${v.drikCertification?.moonWorstArcsec ?? "?"}" · ≤${v.drikCertification?.sunWorstArcsec ?? "?"}" · ${HI() ? "ग्रह" : "planets"} ≤${v.drikCertification?.planetLonWorstArcsec ?? "?"}"</div><div class="k">${HI() ? "दृक् प्रमाणन (चंद्र · सूर्य · ग्रह · राहु) बनाम PyEphem, 2016–2030" : "Drik certified (moon · sun · planets · Rahu) vs PyEphem, 2016–2030"}</div></div>
     </div>
     <div class="note">${esc(v.gate.makaranda.note)}</div>
     <div class="note green">${esc(v.gate.drikCrossCheck.note)}</div>
@@ -1016,6 +1016,9 @@ pages["validation-suite"] = async (el) => {
     <div class="kv mono" style="margin-top:8px">
       <div>${HI() ? "चंद्रमा — सबसे बड़ा अवशेष" : "Moon — worst residual"}</div><div>${v.drikCertification?.moonWorstArcsec ?? "?"}" = ${v.drikCertification?.moonWorstDeg ?? "?"}° @ ${v.drikCertification?.moonWorstAt ?? ""} <span class="badge green">≤0.005° LOCKED</span></div>
       <div>${HI() ? "सूर्य — सबसे बड़ा अवशेष" : "Sun — worst residual"}</div><div>${v.drikCertification?.sunWorstArcsec ?? "?"}" = ${v.drikCertification?.sunWorstDeg ?? "?"}° @ ${v.drikCertification?.sunWorstAt ?? ""} <span class="badge green">≤0.012° LOCKED</span></div>
+      <div>${HI() ? "ग्रह (बुध–शनि) — देशांतर, पूर्ण VSOP87D" : "Planets (Mer–Sat) — longitude, full VSOP87D"}</div><div>${v.drikCertification?.planetLonWorstArcsec ?? "?"}" @ ${v.drikCertification?.planetLonWorstAt ?? ""} <span class="badge green">≤0.001° LOCKED</span> · ${HI() ? "अक्षांश" : "latitude"} ≤${v.drikCertification?.planetLatWorstArcsec ?? "?"}" <span class="badge green">≤0.005° LOCKED</span></div>
+      <div>${HI() ? "राहु — सत्य दोलन-ग्रंथि (ऑस्कुलेटिंग नोड)" : "Rahu — true osculating node"}</div><div>${v.drikCertification?.rahuWorstArcsec ?? "?"}" @ ${v.drikCertification?.rahuWorstAt ?? ""} <span class="badge green">≤0.05° LOCKED</span> <span class="faint">(${HI() ? "चंद्र-β तल × ग्रंथि ज्यामिति; राशि/नक्षत्र कभी नहीं बदलता" : "lunar-β floor × node geometry; never flips rashi/nakshatra"})</span></div>
+      <div>${HI() ? "चंद्र अक्षांश (β)" : "Moon latitude (β)"}</div><div>${v.drikCertification?.moonBetaWorstArcsec ?? "?"}" @ ${v.drikCertification?.moonBetaWorstAt ?? ""} <span class="badge green">≤0.005° LOCKED</span></div>
     </div>
     <h3>${HI() ? "PROVISIONAL फ़ोटो निष्कर्षण (स्वामी पुष्टि की प्रतीक्षा)" : "PROVISIONAL photo extractions (awaiting owner confirmation)"}</h3>
     <table><tr><th>${t("date")}</th><th>${HI() ? "स्रोत" : "Source"}</th><th>${HI() ? "नए पढ़े क्षेत्र" : "Newly read fields"}</th><th>${t("statusH2")}</th></tr>

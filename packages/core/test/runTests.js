@@ -11,6 +11,8 @@ import { parseDandaPala, parseSourceClock, formatDuration } from "../src/traditi
 import { jdFromDate, dateFromJD, norm360, jdToISO } from "../src/base.js";
 import { GOLDEN_ROWS, DERIVED_NORMALIZATION, formulaDerivedInstant, runGoldenSuite, EPHEM_ANCHORS, PHOTO_PROVISIONAL } from "../src/golden.js";
 import { DRIK_CERT_ANCHORS } from "../src/drikCert.js";
+import { PLANET_CERT_ANCHORS } from "../src/planetCert.js";
+import { RAHU_CERT_ANCHORS } from "../src/rahuCert.js";
 import { createContext, methodBanner } from "../src/profiles.js";
 import { calculatePanchang, tithiAt, nakshatraAt } from "../src/panchang.js";
 import { calculateKundali, calculateVarga } from "../src/chart.js";
@@ -18,7 +20,7 @@ import { vimshottari, nakshatraLord } from "../src/dasha.js";
 import { calculateMilan } from "../src/milan.js";
 import { sadeSatiStatus } from "../src/gochar.js";
 import { calculateMuhurta } from "../src/muhurta.js";
-import { drikTrueSidereal, ssTrueSidereal, positionsFor, drikMoonLongitude, drikSunLongitude, hybridMoonLongitude, hybridSunLongitude, HYBRID_PARAMS } from "../src/ephemeris.js";
+import { drikTrueSidereal, ssTrueSidereal, positionsFor, drikMoonLongitude, drikSunLongitude, drikMoonState, drikPlanetApparent, drikTrueNode, hybridMoonLongitude, hybridSunLongitude, HYBRID_PARAMS } from "../src/ephemeris.js";
 import { ascendantSidereal } from "../src/chart.js";
 
 let passed = 0, failed = 0;
@@ -112,7 +114,8 @@ test("tithi boundary lands exactly on a 12° multiple (Drik)", () => {
   const p = calculatePanchang(ctx);
   const { sidereal } = positionsFor(ctx, p.tithi.endJD);
   const dist = norm360(sidereal.Moon - sidereal.Sun);
-  approx(dist % 12, 0, 0.05, "moon-sun distance at tithi end");
+  const r = dist % 12;
+  approx(Math.min(r, 12 - r), 0, 0.05, "moon-sun distance at tithi end");
 });
 test("nakshatra boundary lands exactly on a 13°20′ multiple (Drik)", () => {
   const ctx = createContext({ profileId: "drik-v1", date: "2025-07-11", location: { name: "t", latitude: 26.5833, longitude: 85.2667 } });
@@ -267,20 +270,54 @@ for (const a of EPHEM_ANCHORS) {
   });
 }
 
-console.log("\n[DrikCertification — 60-anchor lock vs PyEphem 4.2.1 (2016–2030)]");
+console.log("\n[DrikCertification — Sun/Moon/Planets/True-Rahu locks vs PyEphem 4.2.1 (2016–2030)]");
 {
-  let wm = 0, ws = 0;
+  let wm = 0, ws = 0, wb = 0;
   for (const a of DRIK_CERT_ANCHORS) {
     const [d, t] = a.iso.split("T"); const [y, m, dd] = d.split("-").map(Number);
     const jd = jdFromDate(y, m, dd, +t.slice(0, 2));
-    wm = Math.max(wm, Math.abs(((drikMoonLongitude(jd) - a.moon + 540) % 360) - 180));
+    const st = drikMoonState(jd);
+    wm = Math.max(wm, Math.abs(((st.lam - a.moon + 540) % 360) - 180));
     ws = Math.max(ws, Math.abs(((drikSunLongitude(jd) - a.sun + 540) % 360) - 180));
+    if (a.moonBet != null) wb = Math.max(wb, Math.abs(st.bet - a.moonBet));
   }
-  test(`Drik moon within 0.005° of PyEphem at all ${DRIK_CERT_ANCHORS.length} cert epochs (worst ${(wm * 3600).toFixed(1)}")`, () => {
-    if (wm > 0.005) throw new Error(`worst moon residual ${wm.toFixed(6)}° > 0.005°`);
+  test(`Drik moon λ within 0.005° of PyEphem at all ${DRIK_CERT_ANCHORS.length} cert epochs (worst ${(wm * 3600).toFixed(1)}")`, () => {
+    if (wm > 0.005) throw new Error(`worst moon λ residual ${wm.toFixed(6)}° > 0.005°`);
+  });
+  test(`Drik moon β within 0.005° of PyEphem at all cert epochs (worst ${(wb * 3600).toFixed(1)}"; Meeus 47.B theory floor)`, () => {
+    if (wb > 0.005) throw new Error(`worst moon β residual ${wb.toFixed(6)}° > 0.005°`);
   });
   test(`Drik sun within 0.012° of PyEphem at all ${DRIK_CERT_ANCHORS.length} cert epochs (worst ${(ws * 3600).toFixed(1)}")`, () => {
     if (ws > 0.012) throw new Error(`worst sun residual ${ws.toFixed(6)}° > 0.012°`);
+  });
+  // Planets: FULL VSOP87D + light-time + aberration + nutation
+  let wpl = 0, wpb = 0;
+  for (const a of PLANET_CERT_ANCHORS) {
+    const [d, t] = a.iso.split("T"); const [y, m, dd] = d.split("-").map(Number);
+    const jd = jdFromDate(y, m, dd, +t.slice(0, 2));
+    for (const p of ["Mercury", "Venus", "Mars", "Jupiter", "Saturn"]) {
+      const got = drikPlanetApparent(p, jd);
+      const ref = a[p.toLowerCase()];
+      wpl = Math.max(wpl, Math.abs(((got.lam - ref.lam + 540) % 360) - 180));
+      wpb = Math.max(wpb, Math.abs(got.bet - ref.bet));
+    }
+  }
+  const nP = PLANET_CERT_ANCHORS.length * 5;
+  test(`Drik planet λ within 0.001° of PyEphem at all ${nP} planet anchors (worst ${(wpl * 3600).toFixed(2)}")`, () => {
+    if (wpl > 0.001) throw new Error(`worst planet λ residual ${wpl.toFixed(6)}° > 0.001°`);
+  });
+  test(`Drik planet β within 0.005° of PyEphem at all ${nP} planet anchors (worst ${(wpb * 3600).toFixed(1)}"; apparent-frame recipe convention)`, () => {
+    if (wpb > 0.005) throw new Error(`worst planet β residual ${wpb.toFixed(6)}° > 0.005°`);
+  });
+  // True Rahu: osculating lunar node vs PyEphem osculating-plane reference
+  let wr = 0;
+  for (const a of RAHU_CERT_ANCHORS) {
+    const [d, t] = a.iso.split("T"); const [y, m, dd] = d.split("-").map(Number);
+    const jd = jdFromDate(y, m, dd, +t.slice(0, 2));
+    wr = Math.max(wr, Math.abs(((drikTrueNode(jd) - a.rahu + 540) % 360) - 180));
+  }
+  test(`Drik true Rahu within 0.05° of PyEphem at all ${RAHU_CERT_ANCHORS.length} anchors (worst ${(wr * 3600).toFixed(1)}"; lunar-β floor amplified by node geometry)`, () => {
+    if (wr > 0.05) throw new Error(`worst Rahu residual ${wr.toFixed(6)}° > 0.05°`);
   });
 }
 

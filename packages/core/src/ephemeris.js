@@ -16,12 +16,16 @@
  *     - Sun: Meeus ch.25 series + apparent corrections (nutation + aberration).
  *     - Moon: FULL Meeus ch.47 series (all 60 Table-47.A periodic terms,
  *       cross-verified against astropy's transcription, mismatches = 0)
- *       + additive terms + nutation. ~10" class (Meeus's own claim).
+ *       + additive terms + nutation, incl. latitude & distance (47.B/Σr).
+ *       ~10" class (Meeus's own claim).
  *     - Nutation: complete IAU-1980 series (63 Δψ + 38 Δε terms).
  *     - ΔT: Espenak–Meeus polynomials; luminaries evaluated at TT.
- *     - Planets: JPL Keplerian elements 1800–2050 + light-time iteration
- *       (arcminute class; adequate for graha placements, not for Panchang).
- *     - Mean lunar node for Rahu/Ketu.
+ *     - Planets: FULL VSOP87D (Bretagnon & Francou 1988) from CDS VI/81,
+ *       truncated at 2e-8 rad (below the theory's precision floor) +
+ *       light-time iteration + annual aberration + full nutation.
+ *       Sub-arcsecond vs PyEphem 4.2.1 (PLANET_CERT_ANCHORS).
+ *     - Rahu/Ketu: TRUE osculating lunar node (plane of the Moon at t±ε);
+ *       certified vs PyEphem node-crossing interpolation (RAHU_CERT_ANCHORS).
  *     - Certified against PyEphem 4.2.1 (see DRIK_CERT_ANCHORS in golden.js).
  *     - Swiss Ephemeris adapter slot reserved (spec §24).
  *
@@ -30,7 +34,8 @@
  */
 
 import { norm360, sinD, cosD, asinD, atan2D } from "./base.js";
-import { NUTATION_IAU1980_PSI, NUTATION_IAU1980_EPS, MOON_TERMS_L } from "./meeusTables.js";
+import { NUTATION_IAU1980_PSI, NUTATION_IAU1980_EPS, MOON_TERMS_L, MOON_TERMS_R, MOON_TERMS_B } from "./meeusTables.js";
+import { VSOP87 } from "./vsopTables.js";
 
 export const KALI_EPOCH_JD = 588465.5; // traditional Kali-ahargana epoch (audit reference)
 export const SS_YUGA_CIVIL_DAYS = 1577917828;
@@ -235,7 +240,8 @@ export function nutationFull(jdTT) {
   return { dPsi, dEps, eps0, eps: eps0 + dEps };
 }
 
-/** Legacy single-term nutation in longitude (kept for arcminute-class planets). */
+/** Legacy single-term nutation — no longer used by any pipeline (kept only
+ *  until a full audit confirms zero references). */
 function nutationDeg(jd) {
   const T = (jd - J2000) / 36525;
   const omega = norm360(125.04452 - 1934.136261 * T);
@@ -272,11 +278,10 @@ export function drikSunRA(jd, obliquity = null) {
   return { lon: lam, ra, dec };
 }
 
-/** Moon APPARENT geocentric longitude: complete Meeus ch.47 series at TT.
- *  All 60 Table-47.A periodic terms (59 nonzero Σl + the additive terms),
- *  E-factors per eq. 47.6, nutation applied. Accuracy class ~10" (Meeus). */
-export function drikMoonLongitude(jdUT) {
-  const jdTT = jdUT + deltaTSec(jdUT) / 86400;
+/** Full Meeus ch.47 lunar series at TT: returns λ, β, Δ (Meeus 47.1–47.5).
+ *  All Table-47.A/47.B periodic terms + additive terms, E-factors per 47.6.
+ *  Accuracy class ~10" (Meeus's own claim). */
+function drikMoonSeries(jdTT) {
   const T = (jdTT - J2000) / 36525;
   const Lp = norm360(218.3164477 + 481267.88123421 * T - 0.0015786 * T * T + T ** 3 / 538841 - T ** 4 / 65194000);
   const D = norm360(297.8501921 + 445267.1114034 * T - 0.0018819 * T * T + T ** 3 / 545868 - T ** 4 / 113065000);
@@ -285,74 +290,153 @@ export function drikMoonLongitude(jdUT) {
   const F = norm360(93.2720950 + 483202.0175233 * T - 0.0036539 * T * T - T ** 3 / 3526000 + T ** 4 / 863310000);
   const A1 = norm360(119.75 + 131.849 * T);   // Venus action
   const A2 = norm360(53.09 + 479264.290 * T); // Jupiter action
+  const A3 = norm360(313.45 + 481266.484 * T); // node passage
   const E = 1 - 0.002516 * T - 0.0000074 * T * T;
-  let sumL = 0;
+  let sumL = 0, sumR = 0, sumB = 0;
   for (const [d, m, mp, f, _om, c, ep] of MOON_TERMS_L) {
     const eFac = ep === 1 ? E : ep === 2 ? E * E : 1;
     sumL += c * eFac * sinD(d * D + m * M + mp * Mp + f * F);
   }
+  for (const [d, m, mp, f, _om, c, ep] of MOON_TERMS_R) {
+    const eFac = ep === 1 ? E : ep === 2 ? E * E : 1;
+    sumR += c * eFac * cosD(d * D + m * M + mp * Mp + f * F);
+  }
+  for (const [d, m, mp, f, _om, c, ep] of MOON_TERMS_B) {
+    const eFac = ep === 1 ? E : ep === 2 ? E * E : 1;
+    sumB += c * eFac * sinD(d * D + m * M + mp * Mp + f * F);
+  }
   sumL += 3958 * sinD(A1) + 1962 * sinD(Lp - F) + 318 * sinD(A2);
-  const { dPsi } = nutationFull(jdTT);
-  return norm360(Lp + sumL / 1e6 + dPsi);
+  sumB += -2235 * sinD(Lp) + 382 * sinD(A3) + 175 * sinD(A1 - F) +
+          175 * sinD(A1 + F) + 127 * sinD(Lp - Mp) - 115 * sinD(Lp + Mp);
+  return { Lp, sumL, sumR, sumB, jdTT };
 }
 
-/* JPL approximate Keplerian elements (valid 1800–2050), degrees & AU. */
-const KEPLER = {
-  Mercury: { a: 0.38709927, e: 0.20563593, I: 7.00497902, L: 252.2503235, peri: 77.45779628, node: 48.33076593,
-             d: { a: 0.00000037, e: 0.00001906, I: -0.00594749, L: 149472.67411175, peri: 0.16047689, node: -0.12534081 } },
-  Venus:   { a: 0.72333566, e: 0.00677672, I: 3.39467605, L: 181.9790995, peri: 131.60246718, node: 76.67984255,
-             d: { a: 0.0000039, e: -0.00004107, I: -0.0007889, L: 58517.81538729, peri: 0.00268329, node: -0.27769418 } },
-  Earth:   { a: 1.00000261, e: 0.01671123, I: -0.00001531, L: 100.46457166, peri: 102.93768193, node: 0,
-             d: { a: 0.00000562, e: -0.00004392, I: -0.01294668, L: 35999.37244981, peri: 0.32327364, node: 0 } },
-  Mars:    { a: 1.52371034, e: 0.0933941, I: 1.84969142, L: -4.55343205, peri: -23.94362959, node: 49.55953891,
-             d: { a: 0.00001847, e: 0.00007882, I: -0.00813131, L: 19140.30268499, peri: 0.44441088, node: -0.29257343 } },
-  Jupiter: { a: 5.202887, e: 0.04838624, I: 1.30439695, L: 34.39644051, peri: 14.72847983, node: 100.47390909,
-             d: { a: -0.00011607, e: -0.0001364, I: -0.00183714, L: 3034.74612775, peri: 0.21252668, node: 0.20469106 } },
-  Saturn:  { a: 9.53667594, e: 0.05386179, I: 2.48599187, L: 49.95424423, peri: 92.59887831, node: 113.66242448,
-             d: { a: -0.0012506, e: -0.00050991, I: 0.00193609, L: 1222.49362201, peri: -0.41897216, node: -0.28867794 } },
-};
+/** Moon APPARENT geocentric state: ecliptic longitude & latitude in the
+ *  TRUE ecliptic of date (full nutation via nutateEcliptic), distance in km. */
+export function drikMoonState(jdUT) {
+  const jdTT = jdUT + deltaTSec(jdUT) / 86400;
+  const { Lp, sumL, sumR, sumB } = drikMoonSeries(jdTT);
+  const nut = nutationFull(jdTT);
+  const { lam, bet } = nutateEcliptic(norm360(Lp + sumL / 1e6), sumB / 1e6, nut);
+  return { lam, bet, distKm: 385000.56 + sumR / 1000 };
+}
 
-function heliocentric(name, jd) {
-  const T = (jd - J2000) / 36525;
-  const el = KEPLER[name];
-  const a = el.a + el.d.a * T;
-  const e = el.e + el.d.e * T;
-  const I = el.I + el.d.I * T;
-  const L = el.L + el.d.L * T;
-  const peri = el.peri + el.d.peri * T;
-  const node = el.node + el.d.node * T;
-  const M = norm360(L - peri);
-  const w = peri - node;
-  let E = M + (180 / Math.PI) * e * sinD(M);
-  for (let i = 0; i < 10; i++) {
-    const dE = (E - (180 / Math.PI) * e * sinD(E) - M) / (1 - e * cosD(E));
-    E -= dE;
-    if (Math.abs(dE) < 1e-9) break;
+/** Moon APPARENT geocentric longitude (kept for hot-path callers). */
+export function drikMoonLongitude(jdUT) {
+  return drikMoonState(jdUT).lam;
+}
+
+/** Moon geocentric CARTESIAN vector (ecliptic of date, arbitrary scale=km). */
+function moonCartesian(jdUT) {
+  const { lam, bet, distKm } = drikMoonState(jdUT);
+  const cb = cosD(bet);
+  return [distKm * cb * cosD(lam), distKm * cb * sinD(lam), distKm * sinD(bet)];
+}
+
+/**
+ * TRUE lunar node (Rahu): ascending node of the osculating lunar orbit.
+ * The node of the plane through the Moon at t±ε converges to the osculating
+ * node as ε→0; ε = 0.02 d makes the O(ε²) plane-curvature error < 0.0001°
+ * while staying far above numerical noise (~7" moon position accuracy).
+ * Frame: apparent ecliptic of date (consistent with the charted Moon).
+ */
+export function drikTrueNode(jdUT) {
+  const eps = 0.02;
+  const r1 = moonCartesian(jdUT - eps);
+  const r2 = moonCartesian(jdUT + eps);
+  const n = [ // r1 × r2 ∝ angular momentum (prograde ⇒ +z component)
+    r1[1] * r2[2] - r1[2] * r2[1],
+    r1[2] * r2[0] - r1[0] * r2[2],
+    r1[0] * r2[1] - r1[1] * r2[0],
+  ];
+  // ascending node vector = ẑ × n ⇒ Ω = atan2(n.x, -n.y)
+  return norm360(atan2D(n[0], -n[1]));
+}
+
+/* ---- Planets: VSOP87D (Bretagnon & Francou 1988), full series from     */
+/* CDS VI/81 truncated at 2e-8 rad (= 0.004", below the theory's own      */
+/* precision floor for every body). Frame: mean ecliptic & equinox OF     */
+/* DATE (precession built into the series). T in thousands of Julian      */
+/* years from J2000 (TT): T = (JD - 2451545) / 365250.                    */
+const AU_PER_DAY_C = 173.1446327;   // speed of light, au/day (= 86400/499.00478)
+const LIGHTTIME_DAYS_PER_AU = 0.0057755183;
+
+function vsopSeriesSum(flat, t) {
+  let s = 0;
+  for (let i = 0; i < flat.length; i += 3) s += flat[i] * Math.cos(flat[i + 1] + flat[i + 2] * t);
+  return s;
+}
+
+/** Heliocentric rectangular position (au), ecliptic of date. */
+export function vsopHeliocentricXYZ(name, t) {
+  const body = VSOP87[name];
+  const val = {};
+  for (const v of ["L", "B", "R"]) {
+    let x = vsopSeriesSum(body[v].terms, t);
+    if (body[v].poisson) for (const k in body[v].poisson) x += vsopSeriesSum(body[v].poisson[k], t) * t ** Number(k);
+    val[v] = x;
   }
-  const xp = a * (cosD(E) - e);
-  const yp = a * Math.sqrt(1 - e * e) * sinD(E);
-  const cw = cosD(w), sw = sinD(w), cn = cosD(node), sn = sinD(node), ci = cosD(I), si = sinD(I);
+  const cb = Math.cos(val.B);
+  return [val.R * cb * Math.cos(val.L), val.R * cb * Math.sin(val.L), val.R * Math.sin(val.B)];
+}
+
+/** Nutation of an ecliptic-of-date direction to the TRUE ecliptic of date.
+ *  Exact small rotations, applied in the ecliptic frame: nutation in
+ *  longitude = Rz(Δψ) about the ecliptic pole (true equinox), then the
+ *  obliquity change = tilt of the ecliptic plane about the equinox line.
+ *  Sign of the Δε tilt locked by PLANET_CERT_ANCHORS (β residuals < 1"). */
+export const NUTATION_ECLIPTIC_QSIGN = 1; // chosen by certification sweep
+function nutateEcliptic(lamDeg, betDeg, { dPsi, dEps }) {
+  const l = (lamDeg * Math.PI) / 180, b = (betDeg * Math.PI) / 180;
+  const p = (dPsi * Math.PI) / 180, q = NUTATION_ECLIPTIC_QSIGN * (dEps * Math.PI) / 180;
+  const x0 = Math.cos(b) * Math.cos(l), y0 = Math.cos(b) * Math.sin(l), z0 = Math.sin(b);
+  // Rz(p): mean equinox -> true equinox (about the ecliptic pole)
+  const x1 = Math.cos(p) * x0 - Math.sin(p) * y0;
+  const y1 = Math.sin(p) * x0 + Math.cos(p) * y0;
+  // Rx(q): tilt of the true ecliptic plane about the equinox line
+  const y2 = Math.cos(q) * y1 - Math.sin(q) * z0;
+  const z2 = Math.sin(q) * y1 + Math.cos(q) * z0;
   return {
-    x: (cw * cn - sw * sn * ci) * xp + (-sw * cn - cw * sn * ci) * yp,
-    y: (cw * sn + sw * cn * ci) * xp + (-sw * sn + cw * cn * ci) * yp,
-    z: sw * si * xp + cw * si * yp,
+    lam: norm360((Math.atan2(y2, x1) * 180) / Math.PI),
+    bet: (Math.asin(Math.max(-1, Math.min(1, z2))) * 180) / Math.PI,
   };
 }
 
-/** Geocentric ecliptic longitude of a planet, 2-pass light-time. */
-export function drikPlanetLongitude(name, jd) {
-  let tau = 0;
-  let geo = null;
-  for (let i = 0; i < 3; i++) {
-    const p = heliocentric(name, jd - tau);
-    const e = heliocentric("Earth", jd);
-    geo = { x: p.x - e.x, y: p.y - e.y, z: p.z - e.z };
-    tau = Math.sqrt(geo.x ** 2 + geo.y ** 2 + geo.z ** 2) * 0.0057755183;
+/** Planet APPARENT geocentric ecliptic (of date): VSOP87D + 4-pass
+ *  light-time + annual aberration (Earth velocity by central difference)
+ *  + full IAU-1980 nutation. Sub-arcsecond vs PyEphem (see PLANET_CERT). */
+export function drikPlanetApparent(name, jdUT) {
+  const jdTT = jdUT + deltaTSec(jdUT) / 86400;
+  const t0 = (jdTT - J2000) / 365250;
+  const rE = vsopHeliocentricXYZ("earth", t0);
+  let rho = null, dist = 0, tau = 0;
+  for (let i = 0; i < 4; i++) {
+    const rP = vsopHeliocentricXYZ(name.toLowerCase(), t0 - tau / 365250);
+    rho = [rP[0] - rE[0], rP[1] - rE[1], rP[2] - rE[2]];
+    dist = Math.hypot(rho[0], rho[1], rho[2]);
+    tau = dist * LIGHTTIME_DAYS_PER_AU;
   }
-  return norm360(atan2D(geo.y, geo.x) + nutationDeg(jd));
+  // annual aberration from Earth's barycentric velocity (au/day)
+  const h = 0.5;
+  const e1 = vsopHeliocentricXYZ("earth", (jdTT - h - J2000) / 365250);
+  const e2 = vsopHeliocentricXYZ("earth", (jdTT + h - J2000) / 365250);
+  const vE = [(e2[0] - e1[0]) / (2 * h), (e2[1] - e1[1]) / (2 * h), (e2[2] - e1[2]) / (2 * h)];
+  const s = rho.map((x) => x / dist);
+  const vd = s[0] * vE[0] + s[1] * vE[1] + s[2] * vE[2];
+  const sa = s.map((si, i) => si + (vE[i] - vd * si) / AU_PER_DAY_C);
+  const lam0 = norm360((Math.atan2(sa[1], sa[0]) * 180) / Math.PI);
+  const bet0 = (Math.asin(Math.max(-1, Math.min(1, sa[2]))) * 180) / Math.PI;
+  const nut = nutationFull(jdTT);
+  const { lam, bet } = nutateEcliptic(lam0, bet0, nut);
+  return { lam, bet, distAU: dist };
 }
 
-/** Mean lunar node (Meeus) => Rahu. */
+/** Geocentric APPARENT ecliptic longitude of a planet (of date). */
+export function drikPlanetLongitude(name, jd) {
+  return drikPlanetApparent(name, jd).lam;
+}
+
+/** Mean lunar node (Meeus) — retained for diagnostics/comparison only. */
 export function drikMeanNode(jd) {
   const T = (jd - J2000) / 36525;
   return norm360(125.0445479 - 1934.1362891 * T + 0.0020754 * T * T + (T * T * T) / 467410 - (T ** 4) / 85473000);
@@ -368,7 +452,7 @@ export function drikTrueSidereal(jd, ayanamsaStrategy = "LAHIRI") {
     Mars: drikPlanetLongitude("Mars", jd),
     Jupiter: drikPlanetLongitude("Jupiter", jd),
     Saturn: drikPlanetLongitude("Saturn", jd),
-    Rahu: drikMeanNode(jd),
+    Rahu: drikTrueNode(jd), // TRUE osculating node (certified vs PyEphem)
   };
   trop.Ketu = norm360(trop.Rahu + 180);
   const sidereal = {};

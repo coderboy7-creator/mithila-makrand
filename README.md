@@ -15,7 +15,7 @@ that interprets — but never calculates.
 | Profile | Engine | Status |
 |---|---|---|
 | `makaranda-v1` (default) | Surya Siddhanta / Makaranda tradition | Release gate NOT PASSED by design — awaiting university worksheets |
-| `drik-v1` | Modern analytical ephemeris — full Meeus ch.47 lunar series, complete IAU-1980 nutation, ΔT, PyEphem-certified grid | **VERIFIED**: moon ≤7.3″, sun ≤33.7″ over 60 epochs 2016–2030 |
+| `drik-v1` | Modern analytical ephemeris — full Meeus ch.47 lunar λ/β/Δ, FULL VSOP87D planets, true osculating Rahu, complete IAU-1980 nutation, ΔT, PyEphem-certified grid | **VERIFIED**: moon λ ≤7.3″ · sun ≤33.7″ · planets λ ≤1.09″ · true Rahu ≤112″ (locked) over 2016–2030 |
 | `makaranda-v2-hybrid` | Modern-anchored means + classical perturbation series, fitted offsets `{dM:+0.37, dA:0, dS:0}` | **UNVERIFIED_HYBRID** — experimental bridge only; never mixed into other pipelines; superseded by `makaranda-v2-tables` when the worksheets arrive |
 
 The hybrid tracks the printed Panchang within the traditional residual band
