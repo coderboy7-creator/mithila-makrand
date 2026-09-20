@@ -53,7 +53,10 @@ const I18N = {
     el: "Element", val: "Value", ends: "Ends (clock)", dp: "Danda–Pala (from sunrise)",
     tithi: "Tithi", nakshatra: "Nakshatra", yoga: "Yoga", karana: "Karana",
     sunrise: "Sunrise", sunset: "Sunset", dayLen: "Day length", rahuKaal: "Rahu Kaal", gulika: "Gulika", yamaganda: "Yamaganda", abhijit: "Abhijit", durmuhurta: "Durmuhurta",
-    graha: "Graha", longitudeH: "Longitude", signH: "Sign", houseH: "House", nakH: "Nakshatra", padaH: "Pada", statusH: "Status",
+    graha: "Graha", longitudeH: "Longitude", signH: "Sign", houseH: "House", nakH: "Nakshatra", padaH: "Pada", statusH: "Flags",
+    signLordH: "Lord", nakLordH: "Nak-lord", avasthaH: "Avastha", sthitiH: "Status", avakhadaH: "Avakhada (birth details)",
+    varnaH: "Varna", vashyaH: "Vashya", yoniH: "Yoni", ganaH: "Gana", nadiH: "Nadi", tattvaH: "Tattva",
+    nameSyllH: "Name syllable", payaH: "Paya", yunjaH: "Yunja", deityH: "Deity", rashiH: "Rashi", charanH: "Charan",
     retro: "R", combust: "combust", aspects: "Aspects (Parashari drishti)", planet: "Planet", aspectsFrom: "Aspects (from lagna)", aspected: "Planets aspected",
     lagna: "Lagna", empty: "empty",
     dashaSeed: "Seed", current: "current", mahadasha: "Mahadasha", period: "Period", years: "Years", antardashas: "Antardashas", span: "Span",
@@ -94,7 +97,10 @@ const I18N = {
     el: "तत्व", val: "मान", ends: "अंत (घड़ी समय)", dp: "दण्ड–पल (सूर्योदय से)",
     tithi: "तिथि", nakshatra: "नक्षत्र", yoga: "योग", karana: "करण",
     sunrise: "सूर्योदय", sunset: "सूर्यास्त", dayLen: "दिनमान", rahuKaal: "राहुकाल", gulika: "गुलिक", yamaganda: "यमघंटी", abhijit: "अभिजीत मुहूर्त", durmuhurta: "दुर्मुहूर्त",
-    graha: "ग्रह", longitudeH: "रेखांश", signH: "राशि", houseH: "भाव", nakH: "नक्षत्र", padaH: "पाद", statusH: "स्थिति",
+    graha: "ग्रह", longitudeH: "रेखांश", signH: "राशि", houseH: "भाव", nakH: "नक्षत्र", padaH: "पाद", statusH: "फ़्लैग",
+    signLordH: "स्वामी", nakLordH: "नक्षत्र स्वामी", avasthaH: "अवस्था", sthitiH: "स्थिति", avakhadaH: "अवखड़ा विवरण",
+    varnaH: "वर्ण", vashyaH: "वश्य", yoniH: "योनि", ganaH: "गण", nadiH: "नाड़ी", tattvaH: "तत्व",
+    nameSyllH: "नाम अक्षर", payaH: "पाया", yunjaH: "युंजा", deityH: "देवता", rashiH: "राशि", charanH: "चरण",
     retro: "व", combust: "दग्ध", aspects: "दृष्टियाँ (पराशरी)", planet: "ग्रह", aspectsFrom: "दृष्टि (लग्न से)", aspected: "दृष्ट ग्रह",
     lagna: "लग्न", empty: "रिक्त",
     dashaSeed: "सीड", current: "चालू", mahadasha: "महादशा", period: "अवधि", years: "वर्ष", antardashas: "अंतर्दशाएँ", span: "अवधि",
@@ -624,17 +630,41 @@ pages["panchang"] = async (el) => {
   $("#p-go").onclick = run; run();
 };
 
+const L = (o) => (HI() ? o.hi : o.en);
+function avakhadaCard(k) {
+  const a = k.avakhada;
+  if (!a) return "";
+  const row = (h, v) => `<div>${h}</div><div>${v}</div>`;
+  return `<div class="card flat" style="margin-top:12px"><h3>${t("avakhadaH")}</h3>
+  <div class="kv">
+    ${row(t("nakH"), `${a.nakshatra} · ${t("charanH")} ${a.pada}`)}
+    ${row(t("deityH"), esc(a.deity))}
+    ${row(t("varnaH"), HI() ? a.varnaDev : a.varna)}
+    ${row(t("vashyaH"), HI() ? a.vashyaDev : a.vashya)}
+    ${row(t("yoniH"), HI() ? a.yoniDev : `${a.yoni} (${a.yoniGender})`)}
+    ${row(t("ganaH"), HI() ? a.ganaDev : a.gana)}
+    ${row(t("nadiH"), HI() ? a.nadiDev : a.nadi)}
+    ${row(t("rashiH"), `${signLbl(a.rashi)} · ${t("signLordH")}: ${A(a.rashiLord)}`)}
+    ${row(t("tattvaH"), esc(a.tattva))}
+    ${row(t("nameSyllH"), `<b class="p-Moon">${esc(a.nameSyllable)}</b>`)}
+    ${row(t("payaH"), HI() ? a.payaDev : a.paya)}
+    ${row(t("yunjaH"), HI() ? a.yunjaDev : a.yunja)}
+  </div></div>`;
+}
 function kundaliTables(k) {
   return `
   <table>
-    <tr><th>${t("graha")}</th><th>${t("longitudeH")}</th><th>${t("signH")}</th><th>${t("houseH")}</th><th>${t("nakH")}</th><th>${t("padaH")}</th><th>${t("statusH")}</th></tr>
+    <tr><th>${t("graha")}</th><th>${t("longitudeH")}</th><th>${t("signH")}</th><th>${t("nakH")}</th><th>${t("padaH")}</th><th>${t("houseH")}</th><th>${t("avasthaH")}</th><th>${t("sthitiH")}</th><th>${t("statusH")}</th></tr>
     ${k.positions.map((p) => `<tr>
-      <td><b>${A(p.name)}</b></td>
+      <td><b>${A(p.name)}</b> <span class="faint">${A(p.signLord)} · ${A(p.nakshatraLord)}</span></td>
       <td class="mono">${p.dms.d}°${String(p.dms.m).padStart(2, "0")}′${String(Math.round(p.dms.s)).padStart(2, "0")}</td>
-      <td>${signLbl(p.sign)}</td><td>${p.house}</td><td>${A(p.nakshatra)}</td><td>${p.pada}</td>
+      <td>${signLbl(p.sign)}</td><td>${A(p.nakshatra)}</td><td>${p.pada}</td><td>${p.house}</td>
+      <td>${p.avastha ? L(p.avastha) : "—"}</td>
+      <td>${p.status ? L(p.status) : "—"}</td>
       <td>${p.retrograde ? `<span class="badge amber">${t("retro")}</span> ` : ""}${p.combust ? `<span class="badge red">${t("combust")}</span>` : ""}</td>
     </tr>`).join("")}
-  </table>`;
+  </table>
+  ${avakhadaCard(k)}`;
 }
 
 pages["kundali"] = async (el) => {

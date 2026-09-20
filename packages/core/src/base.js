@@ -6,6 +6,9 @@
 export const norm360 = (x) => ((x % 360) + 360) % 360;
 export const norm12 = (x) => ((x % 12) + 12) % 12;
 
+/** Sign lords by sign index (Mesha→Mars … Meena→Jupiter). Single source. */
+export const SIGN_LORDS = ["Mars", "Venus", "Mercury", "Moon", "Sun", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Saturn", "Jupiter"];
+
 const D2R = Math.PI / 180;
 export const sinD = (x) => Math.sin(x * D2R);
 export const cosD = (x) => Math.cos(x * D2R);

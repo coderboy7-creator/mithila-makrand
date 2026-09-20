@@ -32,6 +32,20 @@ semantics, consultation/CRM, reports, validation suite UI, method/profile chrome
 | P5 | PostgreSQL (Flyway) mirroring db.json; CRM/booking persistence; JSON dev fallback | ⬜ |
 | P6 | AI interpretation adapter, Docker image, cutover runbook, retire Node per endpoint | ⬜ |
 
+## 2A. Astrotalk report parity (active track — docs/ASTROTALK_PARITY_PLAN.md)
+
+| # | Slice | Status |
+|---|---|---|
+| S1 | Avakhada + extended graha table (nak-lord/pada/avastha/sthiti/vakri) + classical table fixes (gana/nadi/yoni/maitri BPHS) | ✅ |
+| S2 | Shadbala + Bhavabala (verify vs PDF numbers) | ⬜ |
+| S3 | Full shodasha vargas (16) + life-area titles + varga grid UI | ⬜ |
+| S4 | Ashtakavarga (PAV + SAV bindu tables) | ⬜ |
+| S5 | KP module (unequal cusps vs PDF, sub-lords, ruling planets) | ⬜ |
+| S6 | Full antardasha listing UI + deterministic dasha interpretation templates | ⬜ |
+| S7 | Yoga library expansion + dosha analysis card (Manglik/Kalsarp/Sade-Sati) | ⬜ |
+| S8 | Remedies: ratna (life/lucky/fortune + metal/finger/mantra) + rudraksha mukhi library | ⬜ |
+| S9 | Branded bilingual report composer (print→PDF now, server PDF at JVM P5+) | ⬜ |
+
 ## 3. Owner-side inputs (block Makaranda gate, not Drik)
 
 | # | Item | Status |

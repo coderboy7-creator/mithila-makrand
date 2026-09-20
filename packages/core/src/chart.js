@@ -4,15 +4,18 @@
  * layer (master spec §14.1, §14.2).
  */
 
-import { norm360, gmst, atan2D, cosD, sinD, tanD, degToDms } from "./base.js";
+import { norm360, gmst, atan2D, cosD, sinD, tanD, degToDms, SIGN_LORDS } from "./base.js";
 import { positionsFor, drikIsRetrograde, ssIsRetrograde } from "./ephemeris.js";
 import { NAKSHATRA_NAMES } from "./panchang.js";
+import { statusOf, avasthaOf } from "./planetStatus.js";
+import { avakhadaOf } from "./avakhada.js";
 
 export const PLANETS = ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn", "Rahu", "Ketu"];
 
 export const SIGN_SHORT = ["Mes", "Vri", "Gem", "Kan", "Leo", "Vir", "Lib", "Vrs", "Dha", "Mak", "Kum", "Mee"];
 
-export const SIGN_LORDS = ["Mars", "Venus", "Mercury", "Moon", "Sun", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Saturn", "Jupiter"];
+/** Vimshottari nakshatra lords (Ketu→Venus→Sun→Moon→Mars→Rahu→Jupiter→Saturn→Mercury). */
+export const NAKSHATRA_LORDS = ["Ketu", "Venus", "Sun", "Moon", "Mars", "Rahu", "Jupiter", "Saturn", "Mercury"];
 
 /** Combustion orbs (Surya Siddhanta traditional, degrees from Sun). */
 export const COMBUSTION_ORBS = { Moon: 12, Mars: 17, Mercury: 12, Jupiter: 11, Venus: 10, Saturn: 15 };
@@ -61,8 +64,11 @@ export function planetaryPositions(ctx, jd) {
       sign: s,
       signLord: SIGN_LORDS[s],
       nakshatra: nak.name,
+      nakshatraLord: NAKSHATRA_LORDS[nak.index % 9],
       pada: nak.pada,
       retrograde: retro,
+      avastha: avasthaOf(lon),
+      status: statusOf(name, s),
     };
   });
   // Combustion
@@ -113,6 +119,7 @@ export function calculateKundali(ctx, jd) {
     houseOccupants,
     signOccupants,
     chartStyleSupport: ["NORTH_INDIAN", "SOUTH_INDIAN", "EAST_INDIAN"],
+    avakhada: avakhadaOf(positions.find((p) => p.name === "Moon").longitude),
     ayanamsa,
     engine,
     audit: { mode: ctx.calculationMode, profile: ctx.profileVersion, ayanamsa: ctx.ayanamsa, ephemerisSource: ctx.ephemerisSource, rulesetVersion: ctx.rulesetVersion },

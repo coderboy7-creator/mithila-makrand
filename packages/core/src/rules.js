@@ -4,7 +4,8 @@
  * interpretation, ruleset version, calculation profile.
  */
 
-import { signOf, SIGN_LORDS } from "./chart.js";
+import { signOf } from "./chart.js";
+import { SIGN_LORDS } from "./base.js";
 
 const BENEFICS = ["Jupiter", "Venus", "Mercury", "Moon"];
 const MALEFICS = ["Sun", "Mars", "Saturn", "Rahu", "Ketu"];

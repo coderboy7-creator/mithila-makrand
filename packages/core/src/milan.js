@@ -4,11 +4,12 @@
  * engine (master spec §14.6).
  */
 
-import { SIGN_LORDS } from "./chart.js";
+import { SIGN_LORDS } from "./base.js";
 import { nakshatraOf } from "./chart.js";
+import { GANA_SEQ, NADI_SEQ, YONI_SEQ } from "./avakhada.js";
 
 /* ---- Varna (1) ---- */
-const VARNA_OF_SIGN = [2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1]; // Kshatriya/Vaishya/Shudra/Brahmin = 2/3/4/1
+const VARNA_OF_SIGN = [2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1]; // Kshatriya/Vaishya/Shudra/Brahmin = 2/3/4/1 (Moon-sign based, classical)
 
 /* ---- Vashya (2): classical sign matrix (classical-v1; VERIFY edition) ---- */
 const VASHYA = {
@@ -19,27 +20,16 @@ const VASHYA = {
 /* ---- Tara (3) ---- */
 const TARA_GOOD = [true, true, false, true, false, true, false, true, true]; // janma..parama-mitra
 
-/* ---- Yoni (4): nakshatra -> [animal, gender] ---- */
-const YONI = [
-  ["Horse", "M"], ["Elephant", "M"], ["Goat", "F"], ["Serpent", "M"], ["Mongoose", "F"], ["Dog", "M"],
-  ["Cat", "M"], ["Sheep", "F"], ["Serpent", "F"], ["Rat", "M"], ["Rat", "F"], ["Cow", "M"],
-  ["Buffalo", "M"], ["Tiger", "F"], ["Buffalo", "M"], ["Tiger", "M"], ["Hare", "M"], ["Worm", "F"],
-  ["Cat", "F"], ["Monkey", "M"], ["Mongoose", "M"], ["Horse", "F"], ["Lion", "M"], ["Horse", "M"],
-  ["Lion", "F"], ["Cow", "F"], ["Elephant", "F"],
-];
+/* ---- Yoni (4): classical nakshatra animals (single source: avakhada.js) ---- */
+const YONI = YONI_SEQ;
 const YONI_ENEMY = {
   Horse: "Buffalo", Buffalo: "Horse", Elephant: "Lion", Lion: "Elephant",
   Goat: "Monkey", Monkey: "Goat", Serpent: "Mongoose", Mongoose: "Serpent",
-  Cow: "Tiger", Tiger: "Cow", Rat: "Cat", Cat: "Rat", Dog: "Hare", Hare: "Dog",
+  Cow: "Tiger", Tiger: "Cow", Rat: "Cat", Cat: "Rat", Dog: "Deer", Deer: "Dog",
 };
 
-/* ---- Graha Maitri (5) ---- */
-const FRIENDS = {
-  Sun: ["Moon", "Mars", "Jupiter"], Moon: ["Sun", "Mercury"], Mars: ["Sun", "Moon", "Jupiter"],
-  Mercury: ["Sun", "Venus"], Jupiter: ["Sun", "Moon", "Mars"], Venus: ["Mercury", "Saturn"],
-  Saturn: ["Mercury", "Venus"],
-};
-const NEUTRAL = { Sun: ["Mercury"], Moon: [], Mars: ["Mercury", "Saturn", "Venus"], Mercury: ["Mars", "Jupiter", "Saturn"], Jupiter: ["Mercury", "Saturn"], Venus: ["Jupiter", "Moon", "Mars"], Saturn: ["Jupiter", "Sun", "Moon"] };
+/* ---- Graha Maitri (5): tables single-sourced in planetStatus.js ---- */
+import { FRIENDS, NEUTRAL } from "./planetStatus.js";
 
 function maitri(lordA, lordB) {
   if (lordA === lordB) return 5;
@@ -53,11 +43,9 @@ function maitri(lordA, lordB) {
   return 0;
 }
 
-/* ---- Gana (6) ---- */
-const GANA = ["Deva", "Rakshasa", "Rakshasa", "Deva", "Deva", "Manushya", "Deva", "Rakshasa", "Rakshasa", "Rakshasa", "Manushya", "Manushya", "Deva", "Rakshasa", "Manushya", "Rakshasa", "Deva", "Rakshasa", "Manushya", "Manushya", "Manushya", "Deva", "Deva", "Rakshasa", "Manushya", "Manushya", "Deva"];
-
-/* ---- Nadi (8) ---- */
-const NADI = (nak) => nak % 3; // 0 Adi, 1 Madhya, 2 Antya
+/* ---- Gana (6) / Nadi (8): classical tables, single-sourced in avakhada.js ---- */
+const GANA = GANA_SEQ;
+const NADI = (nak) => ["Adi", "Madhya", "Antya"].indexOf(NADI_SEQ[nak]);
 
 /**
  * Ashtakoota matching.

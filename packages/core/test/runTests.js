@@ -18,6 +18,8 @@ import { calculatePanchang, tithiAt, nakshatraAt } from "../src/panchang.js";
 import { calculateKundali, calculateVarga } from "../src/chart.js";
 import { vimshottari, nakshatraLord } from "../src/dasha.js";
 import { calculateMilan } from "../src/milan.js";
+import { avakhadaOf, GANA_SEQ, NADI_SEQ } from "../src/avakhada.js";
+import { statusOf, avasthaOf } from "../src/planetStatus.js";
 import { sadeSatiStatus } from "../src/gochar.js";
 import { calculateMuhurta } from "../src/muhurta.js";
 import { drikTrueSidereal, ssTrueSidereal, positionsFor, drikMoonLongitude, drikSunLongitude, drikMoonState, drikPlanetApparent, drikTrueNode, hybridMoonLongitude, hybridSunLongitude, HYBRID_PARAMS, ayanamsaDeg, spicaMeanLongitude, precessJ2000ToEquatorialOfDate, SPICA_HIPPARCOS } from "../src/ephemeris.js";
@@ -414,6 +416,43 @@ for (const a of EPHEM_ANCHORS) {
       approx(ch * 60 + cm, ph * 60 + pm, 10, "sunrise minutes");
     });
   }
+}
+
+/* ============================================================
+   Avakhada + graha status (verified vs Astrotalk ASDF reference PDF:
+   1998-01-10 05:30 IST Darbhanga; Moon 22°17′48″ Vrishabha = Rohini pada 4)
+   ============================================================ */
+{
+  const MOON = 30 + 22 + 17 / 60 + 48 / 3600; // 52.2967° sidereal
+  const av = avakhadaOf(MOON);
+  test("avakhada: Rohini pada 4 for PDF Moon", () => { eq(av.nakshatra, "रोहिणी", "nak"); eq(av.pada, 4, "pada"); });
+  test("avakhada: varna Shudra (PDF)", () => eq(av.varna, "Shudra", "varna"));
+  test("avakhada: vashya Chatushpada (PDF)", () => eq(av.vashya, "Chatushpada", "vashya"));
+  test("avakhada: yoni Serpent-M, gana Manushya, nadi Antya (PDF)", () => {
+    eq(av.yoni, "Serpent", "yoni"); eq(av.yoniGender, "M", "yoni gender");
+    eq(av.gana, "Manushya", "gana"); eq(av.nadi, "Antya", "nadi");
+  });
+  test("avakhada: name syllable वू, paya Loha, yunja Purva, tattva Prithvi (PDF)", () => {
+    eq(av.nameSyllable, "वू", "syllable"); eq(av.paya, "Loha", "paya");
+    eq(av.yunja, "Purva", "yunja"); eq(av.tattva, "पृथ्वी", "tattva");
+  });
+  test("avakhada: lords Venus (rashi) / Moon (nakshatra)", () => { eq(av.rashiLord, "Venus", "rashi lord"); eq(av.nakshatraLord, "Moon", "nak lord"); });
+
+  test("status: Sun in Dhanu = mitra (PDF)", () => eq(statusOf("Sun", 8).key, "friend", "Sun-Sag"));
+  test("status: Mercury in Dhanu = shatru (PDF)", () => eq(statusOf("Mercury", 8).key, "enemy", "Me-Sag"));
+  test("status: Venus in Makar = mitra (PDF)", () => eq(statusOf("Venus", 9).key, "friend", "Ve-Cap"));
+  test("status: Saturn in Meen = sam (PDF blank)", () => eq(statusOf("Saturn", 11).key, "neutral", "Sa-Pis"));
+  test("status: Moon Vrishabha & Mars Makar = exalted (PDF)", () => {
+    eq(statusOf("Moon", 1).key, "exalted", "Moon"); eq(statusOf("Mars", 9).key, "exalted", "Mars");
+  });
+  test("avastha: Bala/Yuva/Vriddha/Mrita by degrees (classical)", () => {
+    eq(avasthaOf(2.94).key, "bala", "2°"); eq(avasthaOf(13.79).key, "yuva", "13°");
+    eq(avasthaOf(22.30).key, "vriddha", "22°"); eq(avasthaOf(25.70).key, "mrita", "25°");
+  });
+  test("classical gana table: Rohini=Manushya, Bharani=Manushya, Ashwini=Deva", () => {
+    eq(GANA_SEQ[3], "Manushya", "Rohini"); eq(GANA_SEQ[1], "Manushya", "Bharani"); eq(GANA_SEQ[0], "Deva", "Ashwini");
+  });
+  test("classical nadi table: Rohini=Antya (NOT nak%3)", () => eq(NADI_SEQ[3], "Antya", "Rohini nadi"));
 }
 
 /* ============================================================ */

@@ -5,7 +5,8 @@
 
 import { norm360, jdToISO, bisect, jdFromDate } from "./base.js";
 import { positionsFor } from "./ephemeris.js";
-import { calculateKundali, SIGN_LORDS } from "./chart.js";
+import { calculateKundali } from "./chart.js";
+import { SIGN_LORDS } from "./base.js";
 
 /**
  * Solar return: instant when the (sidereal) Sun returns to natal longitude.

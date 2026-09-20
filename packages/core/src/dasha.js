@@ -5,7 +5,8 @@
  */
 
 import { norm360 } from "./base.js";
-import { SIGN_LORDS, PLANETS } from "./chart.js";
+import { PLANETS } from "./chart.js";
+import { SIGN_LORDS } from "./base.js";
 
 const YEARS_PER_DAY = 1 / 365.25;
 

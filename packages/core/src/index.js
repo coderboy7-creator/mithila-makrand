@@ -10,6 +10,8 @@ export * from "./ephemeris.js";
 export * from "./solar.js";
 export * from "./panchang.js";
 export * from "./chart.js";
+export * from "./planetStatus.js";
+export * from "./avakhada.js";
 export * from "./dasha.js";
 export * from "./rules.js";
 export * from "./milan.js";
